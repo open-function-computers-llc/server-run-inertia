@@ -2,9 +2,12 @@
     <header>
         <nav>
             <ul>
-                <li><Link href="/home">Home</Link></li>
-                <li><Link href="/login">Login</Link></li>
+                <li><Link href="/dashboard">Dashboard</Link></li>
+                <li><Link href="/accounts">Accounts</Link></li>
+                <li><Link href="/logout">Logout</Link></li>
             </ul>
+
+            <LoadAverages />
         </nav>
     </header>
 
@@ -14,8 +17,9 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import LoadAverages from "@/Components/LoadAverages.vue";
 import ErrorFlash from "@/Components/ErrorFlash.vue";
+import { Link } from '@inertiajs/vue3';
 </script>
 
 <style lang="scss" scoped>
@@ -28,6 +32,8 @@ header {
 
     nav {
         height: 100%;
+        display: flex;
+        justify-content: space-between;
 
         ul {
             height: 100%;

@@ -2,5 +2,7 @@ node_modules
 dist/*.css
 dist/*.js
 dist/*.json
+dist/*.map
+dist/*.txt
 httpd/*
 .env

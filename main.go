@@ -15,7 +15,7 @@ import (
 var dist embed.FS
 
 func main() {
-	port, url, err := processENV()
+	port, url, err := verifyValidENV()
 	if err != nil {
 		panic("Trouble setting up server: " + err.Error())
 	}
@@ -31,10 +31,17 @@ func main() {
 	}
 }
 
-func processENV() (int, string, error) {
+func verifyValidENV() (int, string, error) {
 	requiredENV := []string{
 		"APP_PORT",
 		"APP_URL",
+		"AUTH_USER",
+		"AUTH_PASSWORD",
+		"UPTIME_USER",
+		"UPTIME_PASS",
+		"UPTIME_DOMAIN",
+		"THIRD_PARTY_ACCESS_TOKEN",
+		"WEBSITES_ROOT",
 	}
 
 	for _, env := range requiredENV {
