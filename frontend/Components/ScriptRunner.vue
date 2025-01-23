@@ -1,13 +1,13 @@
 <template>
-    <div>
-        <h3>{{ script ?? "No script" }}:</h3>
-        <ul>
-            <li v-for="message in messages">{{ message }}</li>
-        </ul>
+<div>
+    <h3>{{ script ?? "No script" }}:</h3>
+    <ul>
+        <li v-for="message in messages">{{ message }}</li>
+    </ul>
 
-        <span class="btn btn-success disabled" v-if="!isDone">Done</span>
-        <Link :href="goHereWhenDone" class="btn btn-success" v-else>Done</Link>
-    </div>
+    <span class="btn btn-success disabled" v-if="!isDone">Done</span>
+    <Link :href="completeHref" class="btn btn-success" v-else>Done</Link>
+</div>
 </template>
 
 <script setup>
@@ -15,10 +15,6 @@ import { ref, computed } from "vue";
 import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
-    completeRoute: {
-        type: String,
-        default: "",
-    },
     completeHref: {
         type: String,
         default: "",
@@ -46,8 +42,8 @@ const scriptSocketRunner = () => {
         return;
     }
 
-    const proto = window.parent.location.protocol === "http:" ? "ws": "wss";
-    const socket = new WebSocket(proto + "://" + window.location.host + "/stream/script-runner");
+    const proto = window.parent.location.protocol === "http:" ? "ws" : "wss";
+    const socket = new WebSocket(proto + "://" + window.location.host + "/stream/script-runner?script=" + props.script + "&env=" + JSON.stringify(props.envvars) + "&args=" + JSON.stringify(props.args));
 
     socket.addEventListener('message', (e) => {
         const data = JSON.parse(e.data);
@@ -56,21 +52,15 @@ const scriptSocketRunner = () => {
         // scroll to the bottom of the list
         setTimeout(() => {
             const items = document.querySelectorAll("li");
-            const last = items[items.length-1];
+            const last = items[items.length - 1];
             last.scrollIntoView(false);
         }, 50);
     });
-    socket.onclose = function() {
+    socket.onclose = function () {
         isDone.value = true;
     };
 }
 scriptSocketRunner();
-
-const goHereWhenDone = computed(() => {
-    if (props.completeRoute.value == 'account-show') {
-        return
-    }
-});
 </script>
 
 <style lang="scss" scoped>
@@ -82,7 +72,7 @@ ul {
 }
 
 div {
-    max-height:  100%;
+    max-height: 100%;
     display: flex;
     flex-direction: column;
 }

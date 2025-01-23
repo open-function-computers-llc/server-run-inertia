@@ -10,7 +10,7 @@ import (
 	"github.com/open-function-computers-llc/server-run-inertia/session"
 )
 
-func (s *server) handleProcessAuth() http.HandlerFunc {
+func (s *server) handleFormProcessAuth() http.HandlerFunc {
 	type incomingPayload struct {
 		Username string `json:"userName"`
 		Password string `json:"password"`

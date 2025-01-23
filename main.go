@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	scriptrunner "github.com/open-function-computers-llc/server-run-inertia/script-runner"
 	"github.com/open-function-computers-llc/server-run-inertia/server"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -18,6 +19,11 @@ func main() {
 	port, url, err := verifyValidENV()
 	if err != nil {
 		panic("Trouble setting up server: " + err.Error())
+	}
+
+	err = scriptrunner.VerifyAllScriptsExist()
+	if err != nil {
+		panic("Missing script: " + err.Error())
 	}
 
 	s, err := server.New(port, url, dist)

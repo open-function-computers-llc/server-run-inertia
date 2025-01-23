@@ -1,16 +1,14 @@
 <template>
-    <Head :title="'Manage '+account.name" />
-    <Layout>
-        <div>
-            <div class="d-flex justify-content-between">
-                <h2>{{ account.name }}</h2>
+<Head :title="'Manage ' + account.name" />
+<div>
+    <div class="d-flex justify-content-between">
+        <h2>{{ account.name }}</h2>
 
-                <Uptime :account="account" />
-            </div>
+        <Uptime :account="account" />
+    </div>
 
-            {{ account }}
-        </div>
-    </Layout>
+    {{ account }}
+</div>
 </template>
 
 <script setup>
@@ -21,6 +19,8 @@ import UnLock from "@/Icons/UnLock.vue";
 import { Link, useForm, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import Uptime from "@/Components/Uptime.vue";
+
+defineOptions({ layout: Layout });
 
 const props = defineProps({
     account: {

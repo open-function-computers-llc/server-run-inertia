@@ -7,7 +7,7 @@ import (
 func (s *server) bindRoutes() {
 	openRoutes := map[string]http.HandlerFunc{
 		"GET /login":        s.handlePage("Login"),
-		"POST /handle-auth": s.handleProcessAuth(),
+		"POST /handle-auth": s.handleFormProcessAuth(),
 		"GET /error":        s.handlePage("Error"),
 		"/":                 s.handlePage("Index"),
 	}
@@ -39,11 +39,11 @@ func (s *server) bindRoutes() {
 
 	// websocket routes
 	websocketRoutes := map[string]http.HandlerFunc{
-		"GET /stream/system-load":   s.handleAPISystemLoad(),
-		"GET /stream/script-runner": s.handleStreamScriptRunner(),
+		"system-load":   s.handleAPISystemLoad(),
+		"script-runner": s.handleStreamScriptRunner(),
 	}
 	for path, handler := range websocketRoutes {
-		s.router.Handle(path, s.ProtectRequest(s.LogRequest(handler)))
+		s.router.Handle("GET /stream/"+path, s.LogRequest(s.ProtectRequest(handler)))
 	}
 
 	s.router.Handle("/dist/", http.FileServer(http.FS(s.distFS)))
