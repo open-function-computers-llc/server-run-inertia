@@ -26,23 +26,23 @@ func scriptType(name string) (string, error) {
 		}
 	}
 
-	return "", errors.New("Invalid script called: " + name)
+	return "", errors.New(InvalidScript + " called: " + name)
 }
 
 func VerifyAllScriptsExist() error {
 	for _, v := range argumentScripts {
 		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v); errors.Is(err, os.ErrNotExist) {
-			return errors.New("Missing script: " + v)
+			return errors.New(MissingScript + ": " + v)
 		}
 	}
 	for _, v := range plainScripts {
 		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v); errors.Is(err, os.ErrNotExist) {
-			return errors.New("Missing script: " + v)
+			return errors.New(MissingScript + ": " + v)
 		}
 	}
 	for _, v := range envScripts {
 		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v); errors.Is(err, os.ErrNotExist) {
-			return errors.New("Missing script: " + v)
+			return errors.New(MissingScript + ": " + v)
 		}
 	}
 	return nil

@@ -30,10 +30,8 @@
 
 <script setup>
 import Layout from "@/Layouts/Authenticated.vue";
-import TextInput from "@/Components/TextInput.vue";
 import Lock from "@/Icons/Lock.vue";
 import UnLock from "@/Icons/UnLock.vue";
-import { ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 
 defineOptions({ layout: Layout });
@@ -44,5 +42,4 @@ const props = defineProps({
         default: []
     }
 });
-
 </script>

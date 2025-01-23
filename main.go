@@ -23,7 +23,7 @@ func main() {
 
 	err = scriptrunner.VerifyAllScriptsExist()
 	if err != nil {
-		panic("Missing script: " + err.Error())
+		panic(err.Error())
 	}
 
 	s, err := server.New(port, url, dist)

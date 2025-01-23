@@ -20,7 +20,7 @@ func (s *server) handleAPISystemLoad() http.HandlerFunc {
 		stdOutString := string(stdout)
 		parts := strings.Split(stdOutString, "load average: ")
 		if len(parts) != 2 {
-			return output, errors.New("There was an error gathering the command output")
+			return output, errors.New(SystemLoadOutputParse)
 		}
 
 		loadParts := strings.Split(parts[1], ", ")
