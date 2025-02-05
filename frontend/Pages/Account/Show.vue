@@ -20,10 +20,10 @@
                     </div>
                 </div>
 
-                <Uptime :account="account" />
-            </div>
+        <Uptime :account="account" />
+    </div>
 
-            <div>
+    <div>
                 <span>Created: {{ account.createdAt }}</span>
             </div>
 
@@ -42,8 +42,22 @@
                     </li>
                 </ul>
             </div>
-        </div>
-    </Layout>
+
+    <br />
+    <br />
+
+    <ScriptRunner v-if="runUnlock"
+        script="unlock"
+        :args="{ ACCOUNT_NAME: 'yippe!' }"
+        @done="() => { runUnlock = false; isLocked = false }" />
+    <ScriptRunner v-if="runLock"
+        script="lock"
+        :args="{ ACCOUNT_NAME: 'yippe!' }"
+        @done="() => { runLock = false; isLocked = true }" />
+
+    <button v-if="isLocked && !runUnlock" @click="runUnlock = true">Unlock</button>
+    <button v-if="!isLocked && !runLock" @click="runLock = true">Lock</button>
+</div>
 </template>
 
 <script setup>
@@ -54,8 +68,11 @@ import Clone from "@/Icons/Clone.vue";
 import Lock from "@/Icons/Lock.vue";
 import UnLock from "@/Icons/UnLock.vue";
 import { Link, useForm, Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
 import Uptime from "@/Components/Uptime.vue";
+import ScriptRunner from "@/Components/ScriptRunner.vue";
+import { ref } from "vue";
+
+defineOptions({ layout: Layout });
 
 const props = defineProps({
     account: {
@@ -63,4 +80,9 @@ const props = defineProps({
         default: {}
     }
 });
+
+const isLocked = ref(props.account.isLocked);
+const runLock = ref(false);
+const runUnlock = ref(false);
+
 </script>

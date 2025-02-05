@@ -1,13 +1,41 @@
 package server
 
 import (
-	"math/rand"
+	"encoding/json"
 	"net/http"
-	"time"
+
+	scriptrunner "github.com/open-function-computers-llc/server-run-inertia/script-runner"
 )
 
 func (s *server) handleStreamScriptRunner() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+
+		script := r.FormValue("script")
+
+		// parse request `args`
+		args := map[string]string{}
+		requestArgs := r.FormValue("args")
+		requestArgsErr := json.Unmarshal([]byte(requestArgs), &args)
+		if requestArgsErr != nil {
+			sendJSONError(w, http.StatusInternalServerError, map[string]string{
+				"error": "Couldn't parse required param `args`",
+			})
+			return
+		}
+
+		// parse request `env`
+		env := map[string]string{}
+		requestEnv := r.FormValue("env")
+		requestEnvErr := json.Unmarshal([]byte(requestEnv), &env)
+		if requestEnvErr != nil {
+			sendJSONError(w, http.StatusInternalServerError, map[string]string{
+				"error": "Couldn't parse required param `env`",
+			})
+			return
+		}
+
+		// set up webhook
 		c, err := s.upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
@@ -17,22 +45,17 @@ func (s *server) handleStreamScriptRunner() http.HandlerFunc {
 		}
 		defer c.Close()
 
-		maxLines := rand.Intn(55) + 40
-		i := 0
-		for {
-			message := "yo"
-			for j := 0; j <= i; j++ {
-				message += "!"
-			}
-			c.WriteJSON(map[string]string{"message": message})
+		commChannel := make(chan string)
 
-			seconds := rand.Intn(500) + 50
-			time.Sleep(time.Duration(seconds) * time.Millisecond)
+		go scriptrunner.StreamScriptOutput(script, args, env, &commChannel)
 
-			i++
-			if i > maxLines {
-				break
+		for incomingMessage := range commChannel {
+			message := map[string]interface{}{
+				"message": incomingMessage,
 			}
+			c.WriteJSON(message)
 		}
+
+		c.Close()
 	}
 }
