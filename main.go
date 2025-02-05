@@ -42,12 +42,29 @@ func verifyValidENV() (int, string, error) {
 		"UPTIME_DOMAIN",
 		"THIRD_PARTY_ACCESS_TOKEN",
 		"WEBSITES_ROOT",
+		"REPORTS_ROOT",
+		"SCRIPTS_ROOT",
+		"ACCOUNTS_ROOT",
 	}
 
 	for _, env := range requiredENV {
 		check := os.Getenv(env)
 		if check == "" {
 			return 0, "", errors.New("missing env: " + env)
+		}
+	}
+
+	envsThatMustBeFolders := []string{
+		"WEBSITES_ROOT",
+		"REPORTS_ROOT",
+		"SCRIPTS_ROOT",
+		"ACCOUNTS_ROOT",
+	}
+
+	for _, envPath := range envsThatMustBeFolders {
+		_, err := os.Stat(os.Getenv(envPath))
+		if err != nil {
+			return 0, "", errors.New("missing env folder (" + envPath + "): " + os.Getenv(envPath))
 		}
 	}
 

@@ -20,7 +20,7 @@
 
         <template v-else>
             <ScriptRunner
-                script="create-ccount"
+                script="create-account"
                 :envvars="{ ACCOUNT_NAME: newAccountName }"
                 />
         </template>

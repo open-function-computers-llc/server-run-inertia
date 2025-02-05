@@ -5,8 +5,8 @@
             <li v-for="message in messages">{{ message }}</li>
         </ul>
 
-        <span class="btn btn-success disabled" v-if="!isDone">Done</span>
-        <Link :href="goHereWhenDone" class="btn btn-success" v-else>Done</Link>
+        <span v-if="!isDone" class="btn btn-success disabled">Done</span>
+        <Link v-else-if="completeHref" :href="goHereWhenDone" class="btn btn-success">Done</Link>
     </div>
 </template>
 
@@ -47,7 +47,7 @@ const scriptSocketRunner = () => {
     }
 
     const proto = window.parent.location.protocol === "http:" ? "ws": "wss";
-    const socket = new WebSocket(proto + "://" + window.location.host + "/stream/script-runner");
+    const socket = new WebSocket(proto + "://" + window.location.host + "/stream/script-runner?script=" + props.script + "&envvars=" + props.envvars);
 
     socket.addEventListener('message', (e) => {
         const data = JSON.parse(e.data);
