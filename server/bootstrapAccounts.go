@@ -20,16 +20,12 @@ func (s *server) bootstrapAccounts() error {
 		if len(line) == 0 { // skip blank lines coming from the `ls` command
 			continue
 		}
-		a, err := account.New(line)
-		if err != nil {
-			return err
-		}
-		err = a.LoadStatus()
+		a, err := account.Find(line)
 		if err != nil {
 			return err
 		}
 
-		s.accounts = append(s.accounts, a)
+		s.accounts = append(s.accounts, *a)
 	}
 
 	return nil

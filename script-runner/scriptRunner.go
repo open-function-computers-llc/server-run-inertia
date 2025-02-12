@@ -47,7 +47,7 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 	}
 
 	if t == ENVSCRIPT {
-		cmd = exec.Command(scriptsRoot + envScripts[scriptName])
+		cmd = exec.Command(scriptsRoot + envScripts[scriptName].filename)
 
 		for key, val := range env {
 			cmd.Env = append(cmd.Env, key+"="+val)
