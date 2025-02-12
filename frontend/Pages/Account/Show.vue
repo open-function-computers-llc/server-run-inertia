@@ -1,6 +1,5 @@
 <template>
     <Head :title="'Manage '+account.name" />
-    <Layout>
         <div>
             <div class="d-flex justify-content-between">
                 <div>
@@ -15,7 +14,7 @@
                             </span>
                         </h1>
                         <Link v-if="account.isLocked" href="#" class="btn btn-success h-100 d-flex align-items-center"><Lock/><span class="ms-2"> Lock</span></Link>
-                        <Link v-if="!account.isLocked" href="#" class="btn btn-danger h-100 d-flex align-items-center"><UnLock/><span class="ms-2"> Unlock</span></Link>
+                        <Link v-if="!account.isLocked" href="#" class="btn btn-warning h-100 d-flex align-items-center"><UnLock/><span class="ms-2"> Unlock</span></Link>
                         <Link href="#" class="btn btn-info ms-2 h-100 d-flex align-items-center"><Clone/><span class="ms-2"> Clone Account</span></Link>
                     </div>
                 </div>
