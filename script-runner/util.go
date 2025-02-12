@@ -41,8 +41,8 @@ func VerifyAllScriptsExist() error {
 		}
 	}
 	for _, v := range envScripts {
-		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v); errors.Is(err, os.ErrNotExist) {
-			return errors.New(MissingScript + ": " + v)
+		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v.filename); errors.Is(err, os.ErrNotExist) {
+			return errors.New(MissingScript + ": " + v.filename)
 		}
 	}
 	return nil

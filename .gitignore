@@ -5,4 +5,5 @@ dist/*.json
 dist/*.map
 dist/*.txt
 httpd/*
+cmd/*
 .env

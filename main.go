@@ -3,11 +3,13 @@ package main
 import (
 	"embed"
 	"errors"
+	"log"
 	"os"
 	"strconv"
 
+	"github.com/open-function-computers-llc/server-run-inertia/app"
 	scriptrunner "github.com/open-function-computers-llc/server-run-inertia/script-runner"
-	"github.com/open-function-computers-llc/server-run-inertia/server"
+	"github.com/urfave/cli/v2"
 
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -26,14 +28,15 @@ func main() {
 		panic(err.Error())
 	}
 
-	s, err := server.New(port, url, dist)
-	if err != nil {
-		panic("Trouble setting up server: " + err.Error())
+	app := &cli.App{
+		Name:     "Server Run",
+		Usage:    "Manage this web server",
+		Commands: app.AvailableCommands(port, url, dist),
 	}
 
-	err = s.Serve()
-	if err != nil {
-		panic("Trouble serving from server: " + err.Error())
+	if err = app.Run(os.Args); err != nil {
+		log.Fatal(err.Error())
+		os.Exit(1)
 	}
 }
 
