@@ -68,7 +68,11 @@ func (s *server) handleAPISystemLoad() http.HandlerFunc {
 
 			stats, err := parse(stdout)
 			if err != nil {
-				c.WriteJSON(map[string]string{"error": err.Error()})
+				// try to parse it from mac output?
+				stats, err = parseMac(string(stdout))
+				if err != nil {
+					c.WriteJSON(map[string]string{"error": err.Error()})
+				}
 			}
 
 			c.WriteJSON(stats)
