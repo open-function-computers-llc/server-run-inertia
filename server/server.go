@@ -24,9 +24,10 @@ type server struct {
 	authPassword   string
 	accounts       []account.Account
 	upgrader       websocket.Upgrader
+	defaultLogo    []byte
 }
 
-func New(port int, url string, fs fs.FS) (server, error) {
+func New(port int, url string, fs fs.FS, logo []byte) (server, error) {
 	s := server{
 		logger:         logrus.New(),
 		port:           port,
@@ -36,6 +37,7 @@ func New(port int, url string, fs fs.FS) (server, error) {
 		sessions:       session.Initialize(),
 		authUser:       os.Getenv("AUTH_USER"),
 		authPassword:   os.Getenv("AUTH_PASSWORD"),
+		defaultLogo:    logo,
 	}
 	err := s.bootstrapAccounts()
 	if err != nil {

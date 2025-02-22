@@ -1,24 +1,23 @@
 <template>
-    <Head title="Login" />
+<Head title="Login" />
 
-    <Layout>
-        <TextInput
-            v-model="form.userName"
-            label="Username"
-            @keydown.enter="sendAuth"
-            :autofocus="true"
-            />
-        <TextInput
-            v-model="form.password"
-            label="Password"
-            type="password"
-            @keydown.enter="sendAuth"
-            />
+<Layout>
+    <h1>Server Maintenance</h1>
+    <TextInput
+        v-model="form.userName"
+        label="Username"
+        @keydown.enter="sendAuth"
+        :autofocus="true" />
+    <TextInput
+        v-model="form.password"
+        label="Password"
+        type="password"
+        @keydown.enter="sendAuth" />
 
-        <p v-if="error">Something went wrong: {{error}}</p>
+    <p v-if="error">Something went wrong: {{ error }}</p>
 
-        <button @click="sendAuth">Login</button>
-    </Layout>
+    <button @click="sendAuth" class="btn btn-success">Login</button>
+</Layout>
 </template>
 
 <script setup>

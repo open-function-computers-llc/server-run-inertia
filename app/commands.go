@@ -6,9 +6,9 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func AvailableCommands(port int, url string, dist fs.FS) []*cli.Command {
+func AvailableCommands(port int, url string, dist fs.FS, logo []byte) []*cli.Command {
 	return []*cli.Command{
-		serve(port, url, dist),
+		serve(port, url, dist, logo),
 		update(),
 	}
 }

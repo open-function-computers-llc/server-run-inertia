@@ -11,11 +11,15 @@ import (
 	scriptrunner "github.com/open-function-computers-llc/server-run-inertia/script-runner"
 	"github.com/urfave/cli/v2"
 
+	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
 )
 
 //go:embed dist/*
 var dist embed.FS
+
+//go:embed assets/logo-default.png
+var defaultLogo []byte
 
 func main() {
 	port, url, err := verifyValidENV()
@@ -31,7 +35,7 @@ func main() {
 	app := &cli.App{
 		Name:     "Server Run",
 		Usage:    "Manage this web server",
-		Commands: app.AvailableCommands(port, url, dist),
+		Commands: app.AvailableCommands(port, url, dist, defaultLogo),
 	}
 
 	if err = app.Run(os.Args); err != nil {
@@ -41,6 +45,13 @@ func main() {
 }
 
 func verifyValidENV() (int, string, error) {
+	// check global env file
+	_, err := os.Stat("/etc/server-run.env")
+	if err == nil {
+		// global env file exists! let's load it
+		godotenv.Load("/etc/server-run.env")
+	}
+
 	requiredENV := []string{
 		"APP_PORT",
 		"APP_URL",

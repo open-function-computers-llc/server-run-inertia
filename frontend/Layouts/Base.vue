@@ -1,21 +1,12 @@
 <template>
-    <header>
-        <nav>
-            <ul>
-                <li><Link href="/home">Home</Link></li>
-                <li><Link href="/login">Login</Link></li>
-            </ul>
-        </nav>
-    </header>
-
-    <main>
-        <slot />
-    </main>
+<main>
+    <WhiteLabelLogo />
+    <slot />
+</main>
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
-import ErrorFlash from "@/Components/ErrorFlash.vue";
+import WhiteLabelLogo from '@/Components/WhiteLabelLogo.vue';
 </script>
 
 <style lang="scss" scoped>

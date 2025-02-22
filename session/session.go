@@ -26,7 +26,7 @@ func Initialize() *SessionBag {
 	go func() {
 		for key, sess := range sBag.sessions {
 			if time.Now().After(sess.expiresAt) {
-				delete(sBag.sessions, key)
+				Invalidate(key)
 			}
 		}
 		time.Sleep(1 * time.Minute)
@@ -51,6 +51,14 @@ func Validate(key string) (bool, time.Time) {
 	}
 
 	return true, sess.expiresAt
+}
+
+func Invalidate(key string) {
+	_, ok := sBag.sessions[key]
+	if !ok {
+		return
+	}
+	delete(sBag.sessions, key)
 }
 
 func Create() string {

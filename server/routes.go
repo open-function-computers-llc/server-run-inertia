@@ -9,6 +9,7 @@ func (s *server) bindRoutes() {
 		"GET /login":        s.handlePage("Login"),
 		"POST /handle-auth": s.handleFormProcessAuth(),
 		"GET /error":        s.handlePage("Error"),
+		"GET /logo":         s.handleLogo(),
 		"/":                 s.handlePage("Index"),
 	}
 
@@ -22,6 +23,7 @@ func (s *server) bindRoutes() {
 		"GET /accounts":              s.handleAccounts(),
 		"GET /create-account":        s.handlePage("Account/Create"),
 		"GET /account/{accountName}": s.handleAccountDetails(),
+		"GET /logout":                s.handleLogout(),
 	}
 
 	for path, handler := range protectedRoutes {
