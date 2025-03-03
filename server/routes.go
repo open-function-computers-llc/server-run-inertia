@@ -20,9 +20,9 @@ func (s *server) bindRoutes() {
 	protectedRoutes := map[string]http.HandlerFunc{
 		// inertia pages
 		"GET /dashboard":             s.handleDashboard(),
-		"GET /accounts":              s.handleAccounts(),
 		"GET /create-account":        s.handlePage("Account/Create"),
 		"GET /account/{accountName}": s.handleAccountDetails(),
+		"GET /importable-accounts":   s.handleListImportableAccounts(),
 		"GET /logout":                s.handleLogout(),
 	}
 

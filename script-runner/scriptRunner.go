@@ -80,3 +80,32 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 
 	wg.Wait()
 }
+
+func ReturnScriptOutput(scriptName string, args, env map[string]string) ([]byte, error) {
+	t, err := scriptType(scriptName)
+	if err != nil {
+		return nil, err
+	}
+	scriptsRoot := os.Getenv("SCRIPTS_ROOT")
+
+	// set up the command runner
+	var cmd *exec.Cmd
+	if t == ARGSCRIPT {
+		// TODO: add the arguments here correctly
+		cmd = exec.Command(scriptsRoot + argumentScripts[scriptName])
+	}
+
+	if t == PLAINSCRIPT {
+		cmd = exec.Command(scriptsRoot + plainScripts[scriptName])
+	}
+
+	if t == ENVSCRIPT {
+		cmd = exec.Command(scriptsRoot + envScripts[scriptName].filename)
+
+		for key, val := range env {
+			cmd.Env = append(cmd.Env, key+"="+val)
+		}
+	}
+
+	return cmd.Output()
+}

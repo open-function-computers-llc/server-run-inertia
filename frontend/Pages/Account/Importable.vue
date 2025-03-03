@@ -1,11 +1,7 @@
 <template>
 <div>
     <div class="d-flex justify-content-between">
-        <h2>Accounts on this server:</h2>
-
-        <div>
-            <Link href="/create-account" class="btn btn-primary">Add Account</Link>
-        </div>
+        <h2>Import which account:</h2>
     </div>
 
     <div class="row">
@@ -13,14 +9,8 @@
             <ul class="list-group">
                 <li
                     v-for="account in accounts"
-                    class="list-group-item d-flex"
-                    :class="{
-                        'list-group-item-success': account.isLocked,
-                        'list-group-item-danger': !account.isLocked,
-                    }">
-                    <Lock v-if="account.isLocked"></Lock>
-                    <UnLock v-if="!account.isLocked"></UnLock>
-                    <Link class="mx-3 d-block" :href="'/account/' + account.name">{{ account.name }}</Link>
+                    class="list-group-item d-flex">
+                    <Link class="mx-3 d-block" :href="'/import-account/' + account">{{ account }}</Link>
                 </li>
             </ul>
         </div>
