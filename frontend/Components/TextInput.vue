@@ -17,7 +17,8 @@
             :tabindex="tabIndex ?? null"
             @input="$emit('update:modelValue', $event.target.value)"
             @keydown.enter="handleOnEnter"
-            ref="input" />
+            ref="input"
+            class="w-100 form-control-lg"/>
     </div>
 </template>
 
