@@ -1,7 +1,15 @@
 <template>
 <main>
-    <WhiteLabelLogo />
-    <slot />
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <WhiteLabelLogo />
+            </div>
+        </div>
+
+        <slot />
+
+    </div>
 </main>
 </template>
 

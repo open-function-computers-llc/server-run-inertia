@@ -1,6 +1,6 @@
 <template>
     <div :class="wrapperClasses">
-        <label v-if="label" class="fw-bold" :for="id">
+        <label v-if="label" class="fw-bold form-label text-start" :for="id">
             {{ label }}
             <template v-if="required">*</template>
         </label>

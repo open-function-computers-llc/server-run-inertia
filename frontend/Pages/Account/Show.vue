@@ -45,22 +45,20 @@
             </nav>
             <div class="tab-content" id="nav-tabContent">
                 <div class="tab-pane fade show active" id="nav-domains" role="tabpanel" aria-labelledby="nav-domains-tab" tabindex="0">
-                    <div class="account-domains">
-                        <h3>Domains on this account:</h3>
-                        <span>Primary domain: {{ account.domain }}</span>
-                        <h4>Additional Domains:</h4>
-                        <span v-if="!account.alternateDomains">No alternate domains.</span>
-                        <ul v-if="account.alternateDomains">
-                            <li v-for="domain in account.alternateDomains">
-                                <span>{{ domain }}</span>
-                            </li>
-                        </ul>
-                    </div>
+                    <AccountDomains :account="account" />
                 </div>
-                <div class="tab-pane fade" id="nav-analytics" role="tabpanel" aria-labelledby="nav-analytics-tab" tabindex="0">Analytics Info</div>
-                <div class="tab-pane fade" id="nav-logs" role="tabpanel" aria-labelledby="nav-logs-tab" tabindex="0">Logs Info</div>
-                <div class="tab-pane fade" id="nav-export" role="tabpanel" aria-labelledby="nav-export-tab" tabindex="0">Export Info</div>
-                <div class="tab-pane fade" id="nav-settings" role="tabpanel" aria-labelledby="nav-settings-tab" tabindex="0">Settings Info (including account termination, uptime url, other settings)</div>
+                <div class="tab-pane fade" id="nav-analytics" role="tabpanel" aria-labelledby="nav-analytics-tab" tabindex="0">
+                    <AccountAnalytics :account="account" />
+                </div>
+                <div class="tab-pane fade" id="nav-logs" role="tabpanel" aria-labelledby="nav-logs-tab" tabindex="0">
+                    <AccountLogs :account="account" />
+                </div>
+                <div class="tab-pane fade" id="nav-export" role="tabpanel" aria-labelledby="nav-export-tab" tabindex="0">
+                    <AccountExport :account="account" />
+                </div>
+                <div class="tab-pane fade" id="nav-settings" role="tabpanel" aria-labelledby="nav-settings-tab" tabindex="0">
+                    <AccountSettings :account="account" />
+                </div>
             </div>
 
 
@@ -91,8 +89,13 @@ import Lock from "@/Icons/Lock.vue";
 import UnLock from "@/Icons/UnLock.vue";
 import { Link, useForm, Head } from '@inertiajs/vue3';
 import Uptime from "@/Components/Uptime.vue";
+import AccountSettings from "@/Components/AccountSettings.vue";
 import ScriptRunner from "@/Components/ScriptRunner.vue";
 import { ref, watch } from "vue";
+import AccountDomains from "@/Components/AccountDomains.vue";
+import AccountAnalytics from "@/Components/AccountAnalytics.vue";
+import AccountLogs from "@/Components/AccountLogs.vue";
+import AccountExport from "@/Components/AccountExport.vue";
 
 defineOptions({ layout: Layout });
 
@@ -109,3 +112,12 @@ const runUnlock = ref(false);
 const runClone = ref(false);
 
 </script>
+
+<style scoped lang="scss">
+.nav-tabs {
+    .nav-link:not(.active) {
+        color: black;
+        background-color: rgb(222, 226, 230);
+    }
+}
+</style>

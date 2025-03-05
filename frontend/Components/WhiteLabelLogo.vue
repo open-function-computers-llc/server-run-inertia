@@ -1,7 +1,7 @@
 <template>
 <div>
     <Link href="/dashboard">
-    <img v-if="logo" :src="logo" alt="Server Maintnenance" />
+        <img v-if="logo" :src="logo" alt="Server Maintnenance" />
     </Link>
 </div>
 </template>
