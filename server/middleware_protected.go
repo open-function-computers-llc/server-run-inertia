@@ -30,7 +30,7 @@ func (s *server) ProtectRequest(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Add("X-Expires-In", strconv.Itoa(int(time.Until(validUntil).Milliseconds())))
+		w.Header().Add("X-Expires-In", strconv.Itoa(int(time.Until(validUntil).Seconds())))
 		next(w, r)
 	}
 }

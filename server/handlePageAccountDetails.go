@@ -6,7 +6,7 @@ import (
 	"github.com/open-function-computers-llc/server-run-inertia/account"
 )
 
-func (s *server) handleAccountDetails() http.HandlerFunc {
+func (s *server) handleAccountDetails(tab string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.bootstrapAccounts()
 
@@ -27,7 +27,11 @@ func (s *server) handleAccountDetails() http.HandlerFunc {
 			return
 		}
 
-		s.inertiaManager.Render(w, r, "Account/Show", map[string]any{
+		tabMapper := map[string]string{
+			"":        "Account/Show",
+			"domains": "Account/Domains",
+		}
+		s.inertiaManager.Render(w, r, tabMapper[tab], map[string]any{
 			"account": a,
 		})
 	}

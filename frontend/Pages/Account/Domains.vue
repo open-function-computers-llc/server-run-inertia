@@ -44,14 +44,10 @@
         <h2>Account Actions</h2>
     </div>
 
-    <AccountSubNav :name="account.name" active="" />
+    <AccountSubNav :name="account.name" active="domains" />
     <br />
     <br />
-
-    <ScriptRunner v-if="runUnlock" script="unlock" :args="{ ACCOUNT_NAME: 'yippe!' }" @done="() => { runUnlock = false; isLocked = false; }" />
-    <ScriptRunner v-if="runLock" script="lock" :args="{ ACCOUNT_NAME: 'yippe!' }" @done="() => { runLock = false; isLocked = true; }" />
-    <ScriptRunner v-if="runClone" script="cloneAccount" :args="{ ACCOUNT_NAME: 'yippe!' }" @done="() => { runClone = false; }" />
-
+    <AccountDomains :account="account" />
 </div>
 </template>
 
@@ -62,8 +58,8 @@ import Lock from "@/Icons/Lock.vue";
 import UnLock from "@/Icons/UnLock.vue";
 import { Link, useForm, Head } from '@inertiajs/vue3';
 import Uptime from "@/Components/Uptime.vue";
-import ScriptRunner from "@/Components/ScriptRunner.vue";
 import { ref, watch } from "vue";
+import AccountDomains from "@/Components/Account/AccountDomains.vue";
 import AccountSubNav from "@/Components/Account/AccountSubNav.vue";
 
 defineOptions({ layout: Layout });
