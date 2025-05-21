@@ -9,6 +9,16 @@
             :autofocus="true"
             :required="true"
             :onEnter="() => { confirmedCreate = true }" />
+
+        <CheckboxInput
+            label="Install Wordpress"
+            v-model:checked="isWordpress" />
+
+        <CheckboxInput
+            v-if="isWordpress"
+            label="Install RAD Framework"
+            v-model:checked="isRAD" />
+
         <div class="d-flex gap-2">
             <Link class="btn btn-danger" href="/accounts">Cancel</Link>
             <button class="btn btn-success" @click="confirmedCreate = true">Create</button>
@@ -26,12 +36,15 @@
 import Layout from "@/Layouts/Authenticated.vue";
 import TextInput from "@/Components/TextInput.vue";
 import ScriptRunner from "@/Components/ScriptRunner.vue";
+import CheckboxInput from "@/Components/CheckboxInput.vue";
 import { Link } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 
 defineOptions({ layout: Layout });
 
 const confirmedCreate = ref(false);
+const isWordpress = ref(false);
+const isRAD = ref(false);
 const newAccountName = ref("");
 
 watch(newAccountName, () => {
