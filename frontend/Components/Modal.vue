@@ -1,7 +1,7 @@
 <template>
 <div class="modal">
     <div class="modal-contents">
-        {{ slot }}
+        <slot />
     </div>
 </div>
 </template>

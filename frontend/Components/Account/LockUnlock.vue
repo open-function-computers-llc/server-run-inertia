@@ -22,9 +22,11 @@
         </button>
     </template>
 
-    <Modal>
-        <ScriptRunner v-if="runUnlock" script="unlock" :args="{ ACCOUNT_NAME: name }" @done="() => { runUnlock = false; isLocked = false; }" />
-        <ScriptRunner v-if="runLock" script="lock" :args="{ ACCOUNT_NAME: name }" @done="() => { runLock = false; isLocked = true; }" />
+    <Modal v-if="runUnlock">
+        <ScriptRunner script="unlock" :args="{ ACCOUNT_NAME: account.name }" @done="() => { runUnlock = false; isLocked = false; }" />
+    </Modal>
+    <Modal v-if="runLock">
+        <ScriptRunner script="lock" :args="{ ACCOUNT_NAME: account.name }" @done="() => { runLock = false; isLocked = true; }" />
     </Modal>
 </div>
 </template>
@@ -33,6 +35,8 @@
 import { ref, watch } from "vue";
 import ScriptRunner from "@/Components/ScriptRunner.vue";
 import Modal from "@/Components/Modal.vue";
+import Lock from "@/Icons/Lock.vue";
+import UnLock from "@/Icons/UnLock.vue";
 
 const props = defineProps({
     account: {
