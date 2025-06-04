@@ -31,6 +31,9 @@ func (s *server) handleAccountDetails(tab string) http.HandlerFunc {
 			"":          "Account/Show",
 			"domains":   "Account/Domains",
 			"analytics": "Account/Analytics",
+			"logs":      "Account/Logs",
+			"export":    "Account/Export",
+			"settings":  "Account/Settings",
 		}
 		s.inertiaManager.Render(w, r, tabMapper[tab], map[string]any{
 			"account": a,

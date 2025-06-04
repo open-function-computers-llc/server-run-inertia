@@ -44,10 +44,10 @@
         <h2>Account Actions</h2>
     </div>
 
-    <AccountSubNav :name="account.name" active="analytics" />
+    <AccountSubNav :name="account.name" active="settings" />
     <br />
     <br />
-    <AccountAnalytics :account="account" />
+    <AccountSettings :account="account" />
 </div>
 </template>
 
@@ -59,7 +59,7 @@ import UnLock from "@/Icons/UnLock.vue";
 import { Link, useForm, Head } from '@inertiajs/vue3';
 import Uptime from "@/Components/Uptime.vue";
 import { ref, watch } from "vue";
-import AccountAnalytics from "@/Components/Account/AccountAnalytics.vue";
+import AccountSettings from "@/Components/Account/AccountSettings.vue";
 import AccountSubNav from "@/Components/Account/AccountSubNav.vue";
 
 defineOptions({ layout: Layout });
