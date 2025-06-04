@@ -21,6 +21,9 @@ var dist embed.FS
 //go:embed assets/logo-default.png
 var defaultLogo []byte
 
+// version can be changed by build flags
+var Version = "latest-dev"
+
 func main() {
 	port, url, err := verifyValidENV()
 	if err != nil {
@@ -35,6 +38,7 @@ func main() {
 	app := &cli.App{
 		Name:     "Server Run",
 		Usage:    "Manage this web server",
+		Version:  Version,
 		Commands: app.AvailableCommands(port, url, dist, defaultLogo),
 	}
 
