@@ -9,8 +9,7 @@
                 <span>{{ domain }}</span>
             </li>
         </ul> -->
-        Account Domain info
-        {{ account }}
+        Account Domain info{{ account }}
     </div>
 </template>
 
@@ -18,6 +17,5 @@
 import { usePage } from '@inertiajs/vue3';
 
 const page = usePage();
-
-console.log(page.props);
+const account = page.props.account;
 </script>
