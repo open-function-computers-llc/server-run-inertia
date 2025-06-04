@@ -1,10 +1,9 @@
 <template>
-<div>
 
     <h1 class="me-2 d-flex align-items-center">
         <Lock v-if="isLocked" />
         <UnLock v-if="!isLocked" />
-        <span> {{ name }}
+        <span> {{ account.name }}
             <span v-if="isLocked">(locked)</span>
             <span v-if="!isLocked">(unlocked)</span>
         </span>
@@ -28,7 +27,7 @@
     <Modal v-if="runLock">
         <ScriptRunner script="lock" :args="{ ACCOUNT_NAME: account.name }" @done="() => { runLock = false; isLocked = true; }" />
     </Modal>
-</div>
+
 </template>
 
 <script setup>

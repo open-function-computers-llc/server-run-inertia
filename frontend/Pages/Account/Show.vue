@@ -37,8 +37,6 @@
 <script setup>
 import Layout from "@/Layouts/Authenticated.vue";
 import Clone from "@/Icons/Clone.vue";
-import Lock from "@/Icons/Lock.vue";
-import UnLock from "@/Icons/UnLock.vue";
 import { Link, useForm, Head } from '@inertiajs/vue3';
 import Uptime from "@/Components/Uptime.vue";
 import ScriptRunner from "@/Components/ScriptRunner.vue";
