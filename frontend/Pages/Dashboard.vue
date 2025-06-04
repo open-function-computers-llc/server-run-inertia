@@ -56,25 +56,6 @@
             </div>
         </div>
     </div>
-
-    <div class="row mt-4">
-        <div class="col">
-            <div class="card f2ban">
-                <div class="card-body">
-                    <h3 class="card-title">Fail2Ban Status</h3>
-                    <div class="card-text">
-                        <ul class="list-group">
-                            <li v-for="jail in f2bJails">
-                                {{ jail.Name }}: {{ jail.TotalBlockedIPs }}
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col"></div>
-    </div>
 </div>
 </template>
 
@@ -93,10 +74,6 @@ const props = defineProps({
         default: [],
     },
     disks: {
-        type: Array,
-        default: [],
-    },
-    f2bJails: {
         type: Array,
         default: [],
     },
