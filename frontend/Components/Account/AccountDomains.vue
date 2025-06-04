@@ -9,7 +9,8 @@
                 <span>{{ domain }}</span>
             </li>
         </ul> -->
-        Account Domain info{{ account }}
+        Account Domain info
+        {{ account }}
     </div>
 </template>
 
