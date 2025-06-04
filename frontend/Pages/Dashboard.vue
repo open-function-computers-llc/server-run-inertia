@@ -30,7 +30,7 @@
                             }">
                             <Lock v-if="account.isLocked"></Lock>
                             <UnLock v-if="!account.isLocked"></UnLock>
-                            <Link class="mx-3 d-block" :href="'/account/' + account.name">{{ account.name }}</Link>
+                            <Link class="mx-3 d-block" :href="'/account/' + account.name + '/domains'">{{ account.name }}</Link>
                         </li>
                     </ul>
                 </div>
