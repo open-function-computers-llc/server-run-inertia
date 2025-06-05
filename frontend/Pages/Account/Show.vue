@@ -25,9 +25,10 @@
         <h2>Account Actions</h2>
     </div>
 
-    <AccountSubNav :name="account.name" active="" />
+    <SubNav :name="account.name" :activeTab="activeTab" @update-tab="activeTab = $event" />
     <br />
     <br />
+    <component :is="tabComponents[activeTab]" :account="account" />
 
     <ScriptRunner v-if="runClone" script="cloneAccount" :args="{ ACCOUNT_NAME: 'yippe!' }" @done="() => { runClone = false; }" />
 
@@ -35,14 +36,19 @@
 </template>
 
 <script setup>
-import Layout from "@/Layouts/Authenticated.vue";
+import { ref } from "vue";
+import { Link, Head } from '@inertiajs/vue3';
 import Clone from "@/Icons/Clone.vue";
-import { Link, useForm, Head } from '@inertiajs/vue3';
+import Layout from "@/Layouts/Authenticated.vue";
 import Uptime from "@/Components/Uptime.vue";
 import ScriptRunner from "@/Components/ScriptRunner.vue";
 import LockUnlock from "@/Components/Account/LockUnlock.vue";
-import { ref, watch } from "vue";
-import AccountSubNav from "@/Components/Account/AccountSubNav.vue";
+import Analytics from "@/Components/Account/Analytics.vue";
+import Domains from "@/Components/Account/Domains.vue";
+import Export from "@/Components/Account/Export.vue";
+import Logs from "@/Components/Account/Logs.vue";
+import Settings from "@/Components/Account/Settings.vue";
+import SubNav from "@/Components/Account/SubNav.vue";
 
 defineOptions({ layout: Layout });
 
@@ -53,8 +59,16 @@ const props = defineProps({
     }
 });
 
+const activeTab = ref('domains');
 const runClone = ref(false);
 
+const tabComponents = {
+    domains: Domains,
+    analytics: Analytics,
+    logs: Logs,
+    export: Export,
+    settings: Settings,
+};
 </script>
 
 <style scoped lang="scss">

@@ -11,8 +11,10 @@
 </template>
 
 <script setup>
-import { usePage } from '@inertiajs/vue3';
-
-const page = usePage();
-const account = page.props.account;
+const props = defineProps({
+    account: {
+        type: Object,
+        default: {}
+    }
+});
 </script>
