@@ -33,7 +33,34 @@ func (s *server) handleDashboard() http.HandlerFunc {
 	}
 	allDiscs := []disc{}
 
-	cmdOutput, _ := exec.Command("df", "-h").Output()
+	cmdOutput, _ := exec.Command(
+		"df",
+		"-h",
+		"--type",
+		"ext4",
+		"--type",
+		"ext3",
+		"--type",
+		"ext2",
+		"--type",
+		"xfs",
+		"--type",
+		"fuseblk",
+		"--type",
+		"vfat",
+		"--type",
+		"iso9660",
+		"--type",
+		"reiserfs",
+		"--type",
+		"btrfs",
+		"--type",
+		"zfs",
+		"--type",
+		"ntfs",
+		"--type",
+		"fuse.sshfs",
+	).Output()
 	lines := strings.Split(string(cmdOutput), "\n")
 	for _, line := range lines {
 		parts := strings.Fields(line)

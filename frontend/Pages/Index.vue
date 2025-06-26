@@ -1,9 +1,9 @@
 <template>
-    <Layout>
-        <div>
-            Oh wow, this is the index page.
-        </div>
-    </Layout>
+<Layout>
+    <div>
+        Oh wow, this is the index page.
+    </div>
+</Layout>
 </template>
 
 <script setup>

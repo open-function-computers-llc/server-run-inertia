@@ -27,13 +27,13 @@ type server struct {
 	defaultLogo    []byte
 }
 
-func New(port int, url string, fs fs.FS, logo []byte) (server, error) {
+func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
 	s := server{
 		logger:         logrus.New(),
 		port:           port,
 		router:         http.NewServeMux(),
-		inertiaManager: inertia.New(url, "./server/index.html", ""),
-		distFS:         fs,
+		inertiaManager: inertia.NewWithFS(url, "dist/index.html", "", inertiaFS),
+		distFS:         inertiaFS,
 		sessions:       session.Initialize(),
 		authUser:       os.Getenv("AUTH_USER"),
 		authPassword:   os.Getenv("AUTH_PASSWORD"),

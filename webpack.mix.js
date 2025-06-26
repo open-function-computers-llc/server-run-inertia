@@ -14,3 +14,5 @@ mix.js('frontend/app.js', 'dist')
 mix.sass('frontend/scss/app.scss', 'dist')
    .version()
    .setPublicPath('dist');
+
+mix.copy("server/index.html", "dist/index.html");
