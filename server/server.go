@@ -44,6 +44,9 @@ func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
 		return s, err
 	}
 
+	// share the live reload port with the frontend
+	s.inertiaManager.Share("liveReloadPort", os.Getenv("APP_LIVERELOAD_PORT"))
+
 	s.bindRoutes()
 
 	return s, nil
