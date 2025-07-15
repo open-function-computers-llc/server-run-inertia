@@ -21,9 +21,11 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 )
 
 // file watching will ignore these directories
@@ -71,12 +73,27 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return r.URL.Port() == os.Getenv("APP_PORT")
+		// let all connections through; we're generous like that
+		return true
 	},
 }
 
 // define the main function
 func main() {
+
+	// check global env file
+	_, err := os.Stat("/etc/server-run.env")
+	if err == nil {
+		// global env file exists! let's load it
+		godotenv.Load("/etc/server-run.env")
+	}
+
+	// check for local env file (will take precedence over global env file)
+	_, err = os.Stat(".env")
+	if err == nil {
+		// local env file exists! let's load it
+		godotenv.Load(".env")
+	}
 
 	// get the port from the environment variable
 	liveReloadPort := os.Getenv("APP_LIVERELOAD_PORT")
@@ -110,7 +127,7 @@ func main() {
 	go programRunner(liveReloadPort)
 
 	// start the http server
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil {
 		fmt.Println(outputPrefix+"Error starting live reload websocket server:", err)
 		os.Exit(1)
@@ -201,11 +218,28 @@ func watchDirectories(dirs []string) {
 	<-make(chan struct{})
 }
 
+func pingServerUntilResponse(appPort string) bool {
+
+	pingURL := "http://localhost:" + appPort
+	maxPingAttempts := 40 // 10 seconds
+	pingAttempts := 0
+
+	for {
+		_, err := http.Get(pingURL)
+		if err != nil && pingAttempts < maxPingAttempts {
+			pingAttempts++
+			time.Sleep(250 * time.Millisecond)
+			continue
+		}
+		return pingAttempts < maxPingAttempts
+	}
+}
+
 // instantiates a new server-run process
 func createProcess(reloadPort string) *exec.Cmd {
 	program := exec.Command("./build.sh", os.Args[1:]...)
 	program.Env = os.Environ()
-	program.Env = append(program.Env, "SKIP_MIX=true", "APP_LIVERELOAD_PORT="+reloadPort)
+	program.Env = append(program.Env, "APP_ENV=development", "APP_LIVERELOAD_PORT="+reloadPort)
 
 	stdErrChannel := make(chan string)
 	go pipeOutput(program.StdoutPipe, outputPrefixMain, nil)
@@ -213,11 +247,24 @@ func createProcess(reloadPort string) *exec.Cmd {
 
 	// listen for the "now serving" message to trigger a frontend reload
 	go func() {
-		for line := range stdErrChannel {
-			if strings.Contains(line, "now serving") {
-				frontendReloadChannel <- true
-			}
+
+		// find the app port
+		appPort := os.Getenv("APP_PORT")
+		if appPort == "" {
+			return
 		}
+
+		// ping the server until it responds
+		shouldReload := pingServerUntilResponse(appPort)
+
+		// send a reload message to the frontend
+		if shouldReload {
+			fmt.Println(outputPrefix + "Webserver started. Reloading frontend...")
+			frontendReloadChannel <- true
+		} else {
+			fmt.Println(outputPrefix + "Failed to ping webserver! Not reloading.")
+		}
+
 	}()
 
 	return program
@@ -239,7 +286,7 @@ func programRunner(port string) {
 		fmt.Println(outputPrefix + "Rebuilding program...")
 
 		// send an interrupt signal to the program
-		err := program.Process.Signal(os.Interrupt)
+		err := program.Process.Kill()
 		if err != nil {
 			fmt.Println(outputPrefix+"Error sending interrupt signal to program:", err)
 		}

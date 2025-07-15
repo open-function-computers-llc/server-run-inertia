@@ -2,8 +2,8 @@
 
 killall server-run
 
-# Don't run npx mix if SKIP_MIX is set
-if [ "$SKIP_MIX" != "true" ]; then
+# Don't run npx mix if app is running in development mode
+if [ "$APP_ENV" != "development" ]; then
     npm exec mix
 fi
 
