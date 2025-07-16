@@ -8,3 +8,4 @@ dist/*.html
 httpd/*
 cmd/*
 .env
+.DS_Store

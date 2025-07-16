@@ -44,6 +44,19 @@ func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
 		return s, err
 	}
 
+	// share the app environment with the frontend
+	appEnvironment := os.Getenv("APP_ENV")
+	if appEnvironment == "" {
+		appEnvironment = "production"
+	}
+	s.inertiaManager.Share("appEnvironment", appEnvironment)
+
+	// share the live reload port with the frontend
+	liveReloadPort := os.Getenv("APP_LIVERELOAD_PORT")
+	if liveReloadPort != "" {
+		s.inertiaManager.Share("liveReloadPort", liveReloadPort)
+	}
+
 	s.bindRoutes()
 
 	return s, nil
