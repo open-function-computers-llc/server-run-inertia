@@ -49,18 +49,11 @@ const outputPrefix = "[Live Reload] "
 const outputPrefixLaravelMix = "[Laravel Mix] "
 const outputPrefixMain = "[Main] "
 
-// there are two types of reasons to rebuild the program
-type rebuildReason int
-
-const (
-	// frontend (/frontend) code changes (watched by laravel mix)
-	frontendRebuild rebuildReason = iota
-	// backend (.go) code changes (watched by this program)
-	backendRebuild
-)
-
 // messages sent to this channel will trigger a rebuild
-var rebuildChannel = make(chan rebuildReason)
+const frontendRebuild = 0
+const backendRebuild = 1
+
+var rebuildChannel = make(chan int)
 
 // messages sent to this channel will trigger a frontend page reload
 var frontendReloadChannel = make(chan bool)
@@ -113,8 +106,7 @@ func main() {
 	http.HandleFunc("/frontend-reload", handleFrontendReload)
 
 	// compile the directories with watched files
-	watchedDirs := compileDirectoriesWithWatchedFiles()
-	go watchDirectories(watchedDirs)
+	go watchDirectories(compileDirectoriesWithWatchedFiles())
 
 	// start the laravel mix watcher
 	// this will block until the initial build has completed
@@ -132,12 +124,12 @@ func main() {
 		fmt.Println(outputPrefix+"Error starting live reload websocket server:", err)
 		os.Exit(1)
 	}
-
 }
 
+// compileDirectoriesWithWatchedFiles is a function that will compile a list of
+// all directorys that contain go code and are children of the current project
+// root folder
 func compileDirectoriesWithWatchedFiles() []string {
-
-	// get the directories that contain go files
 	discoveredDirs := []string{"."}
 	watchedDirs := []string{}
 
@@ -187,7 +179,6 @@ func watchDirectories(dirs []string) {
 					return
 				}
 				if event.Has(fsnotify.Write) {
-					// Mix manifest was updated
 					if slices.Contains(autoRebuildFileExtensions, filepath.Ext(event.Name)) {
 						fmt.Println(outputPrefix+"Watched file modified:", event.Name)
 						rebuildChannel <- backendRebuild
@@ -219,20 +210,18 @@ func watchDirectories(dirs []string) {
 }
 
 func pingServerUntilResponse(appPort string) bool {
-
 	pingURL := "http://localhost:" + appPort
-	maxPingAttempts := 40 // 10 seconds
-	pingAttempts := 0
 
-	for {
+	for i := 0; i < 40; i++ {
 		_, err := http.Get(pingURL)
-		if err != nil && pingAttempts < maxPingAttempts {
-			pingAttempts++
+		if err != nil {
 			time.Sleep(250 * time.Millisecond)
 			continue
 		}
-		return pingAttempts < maxPingAttempts
+		return true
 	}
+
+	return false
 }
 
 // instantiates a new server-run process
@@ -241,13 +230,11 @@ func createProcess(reloadPort string) *exec.Cmd {
 	program.Env = os.Environ()
 	program.Env = append(program.Env, "APP_ENV=development", "APP_LIVERELOAD_PORT="+reloadPort)
 
-	stdErrChannel := make(chan string)
+	// stdErrChannel := make(chan string)
 	go pipeOutput(program.StdoutPipe, outputPrefixMain, nil)
-	go pipeOutput(program.StderrPipe, outputPrefixMain, stdErrChannel)
+	go pipeOutput(program.StderrPipe, outputPrefixMain, nil)
 
-	// listen for the "now serving" message to trigger a frontend reload
 	go func() {
-
 		// find the app port
 		appPort := os.Getenv("APP_PORT")
 		if appPort == "" {
@@ -262,9 +249,8 @@ func createProcess(reloadPort string) *exec.Cmd {
 			fmt.Println(outputPrefix + "Webserver started. Reloading frontend...")
 			frontendReloadChannel <- true
 		} else {
-			fmt.Println(outputPrefix + "Failed to ping webserver! Not reloading.")
+			panic("Couldn't ping server, gotta go!")
 		}
-
 	}()
 
 	return program
@@ -272,7 +258,6 @@ func createProcess(reloadPort string) *exec.Cmd {
 
 // runs the program and restarts on reloadChannel events
 func programRunner(port string) {
-
 	// run the program
 	program := createProcess(port)
 	err := program.Start()
