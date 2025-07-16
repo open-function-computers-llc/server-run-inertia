@@ -14,7 +14,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -47,29 +46,19 @@ var autoRebuildFileExtensions = []string{
 // output prefixes
 const outputPrefix = "[Live Reload] "
 const outputPrefixLaravelMix = "[Laravel Mix] "
-const outputPrefixMain = "[Main] "
+
+// the route that will be pinged to check if the server is running
+// set to /dist/ to ensure the static assets are being served
+const hotReloadPingRoute = "/dist/app.js"
 
 // messages sent to this channel will trigger a rebuild
-const frontendRebuild = 0
-const backendRebuild = 1
-
-var rebuildChannel = make(chan int)
+var rebuildChannel = make(chan struct{})
 
 // messages sent to this channel will trigger a frontend page reload
-var frontendReloadChannel = make(chan bool)
+var frontendReloadChannel = make(chan struct{})
 
 // map of active websocket connections for live reload feature
 var frontendReloadClients = make(map[*websocket.Conn]bool)
-
-// define the websocket upgrader
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		// let all connections through; we're generous like that
-		return true
-	},
-}
 
 // define the main function
 func main() {
@@ -130,25 +119,33 @@ func main() {
 // all directorys that contain go code and are children of the current project
 // root folder
 func compileDirectoriesWithWatchedFiles() []string {
+
+	// start with the current directory
 	discoveredDirs := []string{"."}
 	watchedDirs := []string{}
 
 	// recursively find all folders that contain watched files
 	for len(discoveredDirs) > 0 {
+		// pop the first directory from the list
 		dir := discoveredDirs[0]
 		discoveredDirs = discoveredDirs[1:]
+
+		// read the directory
 		files, err := os.ReadDir(dir)
 		if err != nil {
 			fmt.Println(outputPrefix+"Error reading directory:", err)
 			continue
 		}
 
+		// add all of the child directories to the list of directories to scan
 		for _, file := range files {
 			if file.IsDir() && !slices.Contains(autoRebuildIgnoreDirs, file.Name()) {
 				discoveredDirs = append(discoveredDirs, dir+"/"+file.Name())
 			}
 		}
 
+		// iterate over all of the files in the directory.
+		// if the file is a watched file extension, add this directory to the list of watched directories and break.
 		for _, file := range files {
 			if !file.IsDir() && slices.Contains(autoRebuildFileExtensions, filepath.Ext(file.Name())) {
 				watchedDirs = append(watchedDirs, dir)
@@ -161,7 +158,10 @@ func compileDirectoriesWithWatchedFiles() []string {
 	return watchedDirs
 }
 
+// watches the directories for file changes and triggers a rebuild if a watched file is modified.
+// blocks indefinitely.
 func watchDirectories(dirs []string) {
+
 	// Create a new watcher using fsnotify
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -174,16 +174,20 @@ func watchDirectories(dirs []string) {
 	go func() {
 		for {
 			select {
+			// listen for file changes
 			case event, ok := <-watcher.Events:
 				if !ok {
 					return
 				}
 				if event.Has(fsnotify.Write) {
+					// check if the file is a watched file extension
 					if slices.Contains(autoRebuildFileExtensions, filepath.Ext(event.Name)) {
 						fmt.Println(outputPrefix+"Watched file modified:", event.Name)
-						rebuildChannel <- backendRebuild
+						// trigger a rebuild
+						rebuildChannel <- struct{}{}
 					}
 				}
+			// listen for errors
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
@@ -193,6 +197,7 @@ func watchDirectories(dirs []string) {
 		}
 	}()
 
+	// add all of the directories to the watcher
 	for _, dir := range dirs {
 
 		// Add the frontend directory to the watcher
@@ -209,15 +214,19 @@ func watchDirectories(dirs []string) {
 	<-make(chan struct{})
 }
 
+// pings the server until it responds, returning a boolean indicating whether
+// the ping was successful or the attempt timed out.
 func pingServerUntilResponse(appPort string) bool {
-	pingURL := "http://localhost:" + appPort
+	pingURL := "http://localhost:" + appPort + hotReloadPingRoute
 
+	// ping the server 40 times, waiting 250ms between each attempt (40 * 250ms = 10 seconds)
 	for i := 0; i < 40; i++ {
 		_, err := http.Get(pingURL)
 		if err != nil {
 			time.Sleep(250 * time.Millisecond)
 			continue
 		}
+		// the server responded!
 		return true
 	}
 
@@ -226,14 +235,19 @@ func pingServerUntilResponse(appPort string) bool {
 
 // instantiates a new server-run process
 func createProcess(reloadPort string) *exec.Cmd {
+
+	// uses the build.sh script to start the program
 	program := exec.Command("./build.sh", os.Args[1:]...)
+
+	// copy all of the environment variables, and set the environment to development
 	program.Env = os.Environ()
 	program.Env = append(program.Env, "APP_ENV=development", "APP_LIVERELOAD_PORT="+reloadPort)
 
-	// stdErrChannel := make(chan string)
-	go pipeOutput(program.StdoutPipe, outputPrefixMain, nil)
-	go pipeOutput(program.StderrPipe, outputPrefixMain, nil)
+	// pipe the output directly to the console
+	program.Stdout = os.Stdout
+	program.Stderr = os.Stderr
 
+	// start a goroutine to ping the server until it responds--triggering a frontend reload
 	go func() {
 		// find the app port
 		appPort := os.Getenv("APP_PORT")
@@ -241,15 +255,20 @@ func createProcess(reloadPort string) *exec.Cmd {
 			return
 		}
 
+		// ensure the build script has a chance to do killall first
+		// sometimes program doesn't actually get killed by Program.Process.Kill()
+		time.Sleep(250 * time.Millisecond)
+
 		// ping the server until it responds
 		shouldReload := pingServerUntilResponse(appPort)
 
 		// send a reload message to the frontend
 		if shouldReload {
 			fmt.Println(outputPrefix + "Webserver started. Reloading frontend...")
-			frontendReloadChannel <- true
+			frontendReloadChannel <- struct{}{}
 		} else {
-			panic("Couldn't ping server, gotta go!")
+			fmt.Println(outputPrefix + "Pinging server failed after 10 seconds. Stopping wrapper.")
+			os.Exit(1)
 		}
 	}()
 
@@ -270,7 +289,7 @@ func programRunner(port string) {
 	for range rebuildChannel {
 		fmt.Println(outputPrefix + "Rebuilding program...")
 
-		// send an interrupt signal to the program
+		// kill the program
 		err := program.Process.Kill()
 		if err != nil {
 			fmt.Println(outputPrefix+"Error sending interrupt signal to program:", err)
@@ -299,14 +318,16 @@ func laravelMixWatcher() {
 
 	// run the command
 	command := exec.Command("npm", "exec", "mix", "watch")
-	go pipeOutput(command.StderrPipe, outputPrefixLaravelMix, nil)
+	command.Stderr = os.Stderr
 
-	// listen to the command output
+	// get the stdout pipe
 	stdout, err := command.StdoutPipe()
 	if err != nil {
 		fmt.Println(outputPrefix+"Error getting laravel mix watcher stdout pipe:", err)
 		os.Exit(1)
 	}
+
+	// listen to the output on stdout for successful compilations
 	go func() {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
@@ -314,11 +335,12 @@ func laravelMixWatcher() {
 			if strings.Contains(line, "webpack compiled successfully") {
 				fmt.Println(outputPrefixLaravelMix + "Build successful")
 				// trigger a rebuild
-				rebuildChannel <- frontendRebuild
+				rebuildChannel <- struct{}{}
 			}
 		}
 	}()
 
+	// ensure the command starts
 	err = command.Start()
 	if err != nil {
 		fmt.Println(outputPrefix+"Error starting laravel mix watcher:", err)
@@ -332,6 +354,16 @@ func laravelMixWatcher() {
 // handles the frontend reload websocket connection
 func handleFrontendReload(w http.ResponseWriter, r *http.Request) {
 
+	// define the websocket upgrader
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			// let all connections through; we're generous like that
+			return true
+		},
+	}
+
 	// Create a new websocket connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -342,18 +374,17 @@ func handleFrontendReload(w http.ResponseWriter, r *http.Request) {
 	// add the client to the list of clients
 	frontendReloadClients[conn] = true
 
+	// send a simple message to confirm the connection
 	conn.WriteMessage(websocket.TextMessage, []byte("connected"))
 
 	// listen for disconnect
-	go func() {
-		for {
-			_, _, err := conn.ReadMessage()
-			if err != nil {
-				delete(frontendReloadClients, conn)
-				break
-			}
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			delete(frontendReloadClients, conn)
+			break
 		}
-	}()
+	}
 }
 
 // listens for messages on the frontend reload channel and broadcasts them to all connected clients
@@ -363,24 +394,6 @@ func startFrontendReloadBroadcaster() {
 	for range frontendReloadChannel {
 		for conn := range frontendReloadClients {
 			conn.WriteMessage(websocket.TextMessage, []byte("reload"))
-		}
-	}
-}
-
-// pipes the output of a command to the console and an optional channel
-func pipeOutput(pipeGetter func() (io.ReadCloser, error), prefix string, msgChannel chan string) {
-	pipe, err := pipeGetter()
-	if err != nil {
-		fmt.Println(outputPrefix+"Error getting pipe:", err)
-		os.Exit(1)
-	}
-
-	scanner := bufio.NewScanner(pipe)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(prefix + line)
-		if msgChannel != nil {
-			msgChannel <- line
 		}
 	}
 }
