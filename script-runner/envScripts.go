@@ -30,6 +30,10 @@ var envScripts = map[string]envScript{
 		filename:     "unban-ip.sh",
 		requiredEnvs: []string{"IPADDRESS"},
 	},
+	"ban-ip": {
+		filename:     "ban-ip.sh",
+		requiredEnvs: []string{"IPADDRESS"},
+	},
 	"update-wordpress-domain": {
 		filename:     "change-wordpress-domain.sh",
 		requiredEnvs: []string{"DOMAIN", "ACCOUNT"},

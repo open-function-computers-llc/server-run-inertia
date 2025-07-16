@@ -40,6 +40,12 @@
         <div class="col">
             <div class="card discs">
                 <div class="card-body">
+                    <h3 class="card-title">Server Actions</h3>
+                    <BanIP />
+                </div>
+            </div>
+            <div class="card discs">
+                <div class="card-body">
                     <h3 class="card-title">Disc Usage</h3>
 
                     <div class="card-text">
@@ -65,6 +71,7 @@ import { Link } from '@inertiajs/vue3';
 import Lock from "@/Icons/Lock.vue";
 import UnLock from "@/Icons/UnLock.vue";
 import PieChart from "@/Components/PieChart.vue";
+import BanIP from "@/Components/BanIP.vue";
 
 defineOptions({ layout: Layout });
 
