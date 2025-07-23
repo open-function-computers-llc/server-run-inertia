@@ -4,6 +4,8 @@ dist/*.js
 dist/*.json
 dist/*.map
 dist/*.txt
+dist/*.html
 httpd/*
 cmd/*
 .env
+.DS_Store

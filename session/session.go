@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -38,6 +39,7 @@ func Initialize() *SessionBag {
 func Validate(key string) (bool, time.Time) {
 	appMode := os.Getenv("APP_ENV")
 	if appMode == "development" {
+		fmt.Println(appMode)
 		return true, time.Now()
 	}
 

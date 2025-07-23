@@ -1,11 +1,15 @@
 <template>
 <main>
+
+    <Debug v-if="page.props.appEnvironment === 'development'" />
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-auto">
                 <WhiteLabelLogo />
             </div>
         </div>
+
+        
 
         <slot />
 
@@ -15,6 +19,10 @@
 
 <script setup>
 import WhiteLabelLogo from '@/Components/WhiteLabelLogo.vue';
+import { usePage } from '@inertiajs/vue3';
+import Debug from '../Components/Debug.vue';
+
+const page = usePage();
 </script>
 
 <style lang="scss" scoped>

@@ -1,7 +1,7 @@
 <template>
 <Layout>
     <div>
-        Oh wow, this is the index page.
+        <h1>Oh wow, this is the index page!</h1>
     </div>
 </Layout>
 </template>
