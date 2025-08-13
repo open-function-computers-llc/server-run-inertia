@@ -25,6 +25,7 @@ func (s *server) bindRoutes() {
 		"GET /importable-accounts":   s.handleListImportableAccounts(),
 		"GET /logout":                s.handleLogout(),
 		"GET /settings":              s.handleSettings(),
+		"GET /vcs":                   s.handleVcs(),
 	}
 
 	for path, handler := range protectedRoutes {

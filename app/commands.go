@@ -12,5 +12,9 @@ func AvailableCommands(port int, url string, dist fs.FS, logo []byte) []*cli.Com
 		listSetting(),
 		envExport(),
 		update(),
+		createRepo(),
+		addDeployKey(),
+		// addWebhook(), TODO
+		listRepositories(),
 	}
 }
