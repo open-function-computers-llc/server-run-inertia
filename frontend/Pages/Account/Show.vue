@@ -47,6 +47,7 @@ import Analytics from "@/Components/Account/Analytics.vue";
 import Domains from "@/Components/Account/Domains.vue";
 import Export from "@/Components/Account/Export.vue";
 import Logs from "@/Components/Account/Logs.vue";
+import PubKey from "@/Components/Account/PubKey.vue";
 import Settings from "@/Components/Account/Settings.vue";
 import SubNav from "@/Components/Account/SubNav.vue";
 
@@ -68,6 +69,7 @@ const tabComponents = {
     logs: Logs,
     export: Export,
     settings: Settings,
+    pubkey: PubKey,
 };
 </script>
 

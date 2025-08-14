@@ -1,6 +1,6 @@
 <template>
     <div class="account-domains">
-        <!-- <h3>Domains on this account:</h3>
+        <h3>Account Domains</h3>
         <span v-if="account.domain">Primary domain: {{ account.domain }}</span>
         <h4>Additional Domains:</h4>
         <span v-if="!account.alternateDomains">No alternate domains.</span>
@@ -8,9 +8,7 @@
             <li v-for="domain in account.alternateDomains">
                 <span>{{ domain }}</span>
             </li>
-        </ul> -->
-        Account Domain info
-        {{ account }}
+        </ul>
     </div>
 </template>
 

@@ -1,0 +1,36 @@
+.pubkey-viewer {
+    background-color: $c-white;
+    color: $c-backgroundDark;
+    height: 400px;
+    font-family: monospace;
+    border: 1px solid grey;
+    padding: $grid-gutter-width * 0.3;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+    transition: all $transition-time ease;
+    position: relative;
+    overflow: hidden;
+
+    &:after {
+        position: absolute;
+        bottom: $grid-gutter-width;
+        left: 100%;
+        color: $c-white;
+        background: rgba($c-red, 0.75);
+        padding: $grid-gutter-width * 0.5;
+        text-align: center;
+        width: 200px;
+        display: block;
+        content: "Copied to your clipboard!";
+        transition: all $transition-time*0.5 ease;
+    }
+
+    &.copying {
+        background: $c-backgroundDark;
+        color: $c-white;
+
+        &:after {
+            left: calc(100% - $grid-gutter-width - 200px);
+        }
+    }
+}

@@ -1,6 +1,6 @@
 <template>
     <div class="account-logs">
-        Account Logs info
+        <h3>Account Logs</h3>
     </div>
 </template>
 

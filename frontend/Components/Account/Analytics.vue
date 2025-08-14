@@ -1,6 +1,6 @@
 <template>
     <div class="account-analytics">
-        Account Analytics info
+        <h3>Account Analytics</h3>
     </div>
 </template>
 
