@@ -101,6 +101,9 @@ func verifyValidVCSEnv() error {
 			"GITEA_TOKEN",
 			"GITEA_URL",
 		},
+		"GITHUB": {
+			"GITHUB_TOKEN",
+		},
 	}
 
 	if _, ok := requiredKeysForAGivenProvider[provider]; !ok {

@@ -18,12 +18,17 @@ func DetermineProvider() (string, error) {
 	}
 
 	if configuredProvider == "BITBUCKET" {
-		// check for other required ENV VARS for a GITEA connection
+		// check for other required ENV VARS for a BITBUCKET connection
 		return "bitbucket", nil
 	}
 
 	if configuredProvider == "GITHUB" {
-		// check for other required ENV VARS for a GITEA connection
+		// check for other required ENV VARS for a GITHUB connection
+
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			return "", errors.New("GITHUB_TOKEN is not set. Required for GitHub VCS provider.")
+		}
+
 		return "github", nil
 	}
 
