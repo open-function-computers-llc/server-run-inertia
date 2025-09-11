@@ -53,6 +53,7 @@ func verifyValidENV() (int, string, error) {
 	_, err := os.Stat("/etc/server-run.env")
 	if err == nil {
 		// global env file exists! let's load it
+		// TODO: error check this
 		godotenv.Load("/etc/server-run.env")
 	}
 
@@ -75,6 +76,10 @@ func verifyValidENV() (int, string, error) {
 			return 0, "", errors.New("missing env: " + env)
 		}
 	}
+	err = verifyValidVCSEnv()
+	if err != nil {
+		return 0, "", err
+	}
 
 	webPort := os.Getenv("APP_PORT")
 	portInt, err := strconv.Atoi(webPort)
@@ -83,4 +88,31 @@ func verifyValidENV() (int, string, error) {
 	}
 
 	return portInt, os.Getenv("APP_URL"), nil
+}
+
+func verifyValidVCSEnv() error {
+	provider := os.Getenv("VCS_PROVIDER")
+	if provider == "" {
+		return nil
+	}
+
+	requiredKeysForAGivenProvider := map[string][]string{
+		"GITEA": {
+			"GITEA_TOKEN",
+			"GITEA_URL",
+		},
+	}
+
+	if _, ok := requiredKeysForAGivenProvider[provider]; !ok {
+		return errors.New("invalid VCS_PROVIDER env key")
+	}
+
+	for _, env := range requiredKeysForAGivenProvider[provider] {
+		check := os.Getenv(env)
+		if check == "" {
+			return errors.New("missing env: " + env)
+		}
+	}
+
+	return nil
 }

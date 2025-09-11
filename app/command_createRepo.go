@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/open-function-computers-llc/server-run-inertia/vcs"
+	"github.com/open-function-computers-llc/server-run-inertia/vcs/dummy"
 	"github.com/open-function-computers-llc/server-run-inertia/vcs/gitea"
 	"github.com/open-function-computers-llc/server-run-inertia/vcs/github"
 	"github.com/urfave/cli/v2"
@@ -39,16 +40,17 @@ func createRepoAction(cCtx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-	}
-	if provider == "github" {
+	} else if provider == "github" {
 		p, err = github.NewProvider()
 		if err != nil {
 			return err
 		}
-	}
-	if provider == "bitbucket" {
+	} else if provider == "bitbucket" {
 		// p = bitbucket.NewProvider()
+	} else {
+		p, _ = dummy.NewProvider()
 	}
+
 	err = p.CreateRepository(repoName)
 	if err != nil {
 		return err

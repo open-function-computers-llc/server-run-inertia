@@ -40,6 +40,14 @@ func listRepoAction(cCtx *cli.Context) error {
 	if provider == "bitbucket" {
 		// p = bitbucket.NewProvider()
 	}
-	fmt.Println(p.ListRepositories())
+
+	repos, err := p.ListRepositories()
+	if err != nil {
+		return err
+	}
+	for _, repoName := range repos {
+		fmt.Println(repoName)
+	}
+
 	return nil
 }
