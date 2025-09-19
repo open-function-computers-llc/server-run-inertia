@@ -1,14 +1,19 @@
 package github
 
 import (
-	"encoding/json"
-	"errors"
-	"io"
-	"net/http"
 	"os"
+
+	"github.com/open-function-computers-llc/server-run-inertia/vcs/github/github_api"
 )
 
 func (p gitHubProvider) ListRepositories() ([]string, error) {
+
+	// Relevant API docs:
+	// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user
+	// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-organization-repositories
+
+	// GitHub fine-tuned token permissions required:
+	// Metadata (read)
 
 	url := "https://api.github.com/user/repos"
 
@@ -17,41 +22,8 @@ func (p gitHubProvider) ListRepositories() ([]string, error) {
 		url = "https://api.github.com/orgs/" + os.Getenv("GITHUB_ORG") + "/repos"
 	}
 
-	// Create the request and set the authorization header
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("Authorization", "token "+os.Getenv("GITHUB_TOKEN"))
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-
-	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if the request was successful
-	if resp.StatusCode != 200 {
-		// Parse the error response
-		var errorResponse map[string]interface{}
-		err = json.Unmarshal(body, &errorResponse)
-		if err == nil && errorResponse["message"] != nil {
-			return nil, errors.New("GitHub API Error: " + errorResponse["message"].(string))
-		}
-		// Generic error message
-		return nil, errors.New("Failed to list repositories")
-	}
-
-	// Parse the response body
-	var repos []map[string]interface{}
-	err = json.Unmarshal(body, &repos)
+	// Use the client to make the request
+	repos, err := github_api.GitHubMakeRequest[[]map[string]any](url, "GET", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +33,7 @@ func (p gitHubProvider) ListRepositories() ([]string, error) {
 	for _, repo := range repos {
 		repoNames = append(repoNames, repo["full_name"].(string))
 		// (future reference) Other keys that might be useful:
-		// id (int), private (bool), url, created_at, updated_at, language
+		// id (int), private (bool), html_url, url, created_at, updated_at, language
 	}
 
 	return repoNames, nil
