@@ -9,41 +9,27 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func addDeployKey() *cli.Command {
+func removeDeployKey() *cli.Command {
 	return &cli.Command{
-		Name:    "add-deploy-key",
-		Aliases: []string{"adk"},
-		Usage:   "Add a deploy key to a given git repository",
+		Name:    "remove-deploy-key",
+		Aliases: []string{"rdk"},
+		Usage:   "Remove a deploy key from a given git repository",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "repo",
 				Aliases:  []string{"r"},
-				Usage:    "Name of repository that we are adding a deploy key to",
+				Usage:    "Name of repository that we are removing a deploy key from",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:     "name",
-				Aliases:  []string{"n"},
-				Usage:    "Name of the new deploy key",
+				Name:     "id",
+				Usage:    "ID of the deploy key to remove",
 				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "key",
-				Aliases:  []string{"k"},
-				Usage:    "Public RSA key",
-				Required: true,
-			},
-			&cli.BoolFlag{
-				Name:    "read-only",
-				Aliases: []string{"ro"},
-				Usage:   "False if this key can PUSH to the repository",
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
-			name := cCtx.String("name")
-			key := cCtx.String("key")
-			readOnly := cCtx.Bool("read-only")
 			repository := cCtx.String("repo")
+			id := cCtx.String("id")
 
 			provider, err := vcs.DetermineProvider()
 			if err != nil {
@@ -67,11 +53,11 @@ func addDeployKey() *cli.Command {
 				// p = bitbucket.NewProvider()
 			}
 
-			deployKey, err := p.AddDeployKey(repository, key, name, readOnly)
+			err = p.RemoveDeployKey(repository, id)
 			if err != nil {
 				return err
 			}
-			fmt.Println("Added deploy key to " + repository + " with id " + deployKey.Id)
+			fmt.Println("Removed deploy key from " + repository + " with id " + id)
 			return nil
 		},
 	}

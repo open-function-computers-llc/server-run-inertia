@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func GitHubMakeRequest[T []map[string]any | map[string]any](url string, method string, body []byte) (T, error) {
@@ -44,6 +45,14 @@ func GitHubMakeRequest[T []map[string]any | map[string]any](url string, method s
 
 	// Parse the response body
 	var responseBodyT T
+
+	// Don't parse if the content-type is not application/json
+	if !strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+		// Return an empty instance of T
+		return responseBodyT, nil
+	}
+
+	// JSON parse the response body
 	err = json.Unmarshal(responseBody, &responseBodyT)
 	if err != nil {
 		return nil, err

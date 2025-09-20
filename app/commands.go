@@ -16,5 +16,7 @@ func AvailableCommands(port int, url string, dist fs.FS, logo []byte) []*cli.Com
 		addDeployKey(),
 		// addWebhook(), TODO
 		listRepositories(),
+		listDeployKeys(),
+		removeDeployKey(),
 	}
 }
