@@ -2,7 +2,9 @@ package server
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -584,4 +586,44 @@ func processAnalyticDataForAccount(account string, dataToFetch string) (processe
 	}
 
 	return chartData, nil
+}
+
+func (s *server) getAnalyticsJSON(accountName, chartType string) ([]byte, int, error) {
+	if accountName == "" || chartType == "" {
+		errResp, _ := json.Marshal(map[string]string{
+			"error": "the query params `account` and `type` are both required",
+		})
+		return errResp, http.StatusBadRequest, nil
+	}
+
+	if !slices.Contains([]string{"bandwidth", "visitors"}, chartType) {
+		errResp, _ := json.Marshal(map[string]string{
+			"error": "invalid `type`, pass either 'bandwidth' or 'visitors'",
+		})
+		return errResp, http.StatusBadRequest, nil
+	}
+
+	chartData, err := processAnalyticDataForAccount(accountName, chartType)
+	if err != nil {
+		errResp, _ := json.Marshal(map[string]string{
+			"error": err.Error(),
+		})
+		return errResp, http.StatusBadRequest, nil
+	}
+
+	data := map[string]thirdPartyAnalyticsJSON{
+		chartType: {
+			Values:   chartData.outputValues,
+			Duration: len(chartData.outputValues),
+			Start:    chartData.outputLabels[0],
+			End:      chartData.outputLabels[len(chartData.outputLabels)-1],
+			Average:  getAverage(chartData.outputValues),
+			Total:    getTotal(chartData.outputValues),
+			Min:      0,
+			Max:      getMax(chartData.outputValues),
+		},
+	}
+
+	bytes, _ := json.Marshal(data)
+	return bytes, http.StatusOK, nil
 }

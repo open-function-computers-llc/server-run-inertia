@@ -11,7 +11,9 @@
   "dependencies": {
     "@inertiajs/vue3": "^1.0.14",
     "bootstrap": "^5.3.3",
-    "vue": "^3.4.0"
+    "chart.js": "^4.5.0",
+    "vue": "^3.4.0",
+    "vue-chartjs": "^5.3.2"
   },
   "devDependencies": {
     "laravel-mix": "^6.0.49",
