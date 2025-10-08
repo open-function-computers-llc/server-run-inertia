@@ -1,25 +1,26 @@
 <template>
-  <div class="p-4">
-    <h2 class="text-xl font-bold mb-4">Analytics</h2>
+<div class="p-4">
+  <h2 class="text-xl font-bold mb-4">Analytics</h2>
+  <input type="text" v-model="chartType" />
 
-    <div v-if="loading" class="text-gray-500">Loading analytics...</div>
+  <Spinner v-if="isLoading" />
 
-    <div v-else-if="error" class="text-red-600">
-      {{ error }}
-    </div>
-
-    <div v-else-if="!chartData">
-      <p class="text-gray-500">No analytics data available.</p>
-    </div>
-
-    <div v-else class="chart-container">
-      <Line :data="chartData" :options="chartOptions" />
-    </div>
+  <div v-else-if="error" class="text-red-600">
+    {{ error }}
   </div>
+
+  <div v-else-if="!chartData">
+    <p class="text-gray-500">No analytics data available.</p>
+  </div>
+
+  <div v-else class="chart-container">
+    <Line :data="chartData" :options="chartOptions" />
+  </div>
+</div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { Line } from 'vue-chartjs'
 import {
@@ -32,20 +33,21 @@ import {
   LinearScale,
   PointElement
 } from 'chart.js'
+import Spinner from '../Spinner.vue'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement)
 
 const props = defineProps({
-    account: {
-      type: Object,
-      default: {}
-    }
+  account: {
+    type: Object,
+    default: {}
+  }
 })
 
-const loading = ref(true)
+const isLoading = ref(false)
 const error = ref(null)
-const chartData = ref(null)
-const chartType = 'bandwidth'
+const chartData = ref([])
+const chartType = ref('')
 
 const chartOptions = {
   responsive: true,
@@ -71,11 +73,12 @@ const chartOptions = {
   },
 }
 
-onMounted(async () => {
+watch(chartType, async () => {
   try {
+    isLoading.value = true;
     console.log('Fetching analytics for', props.account.name)
     const res = await axios.get(`/accounts/${props.account.name}/analytics`, {
-      params: { type: chartType },
+      params: { type: chartType.value },
     })
     console.log('Analytics response:', res.data)
 
@@ -107,9 +110,10 @@ onMounted(async () => {
     console.error('Failed to load analytics', err)
     error.value = err.response?.data?.error || 'Failed to load analytics data.'
   } finally {
-    loading.value = false
+    isLoading.value = false
   }
 })
+chartType.value = 'bandwidth';
 </script>
 
 <style scoped>
