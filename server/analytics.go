@@ -611,6 +611,13 @@ func (s *server) getAnalyticsJSON(accountName, chartType string) ([]byte, int, e
 		return errResp, http.StatusBadRequest, nil
 	}
 
+	if len(chartData.outputLabels) == 0 || len(chartData.outputValues) == 0 {
+		errResp, _ := json.Marshal(map[string]string{
+			"error": "no analytics data found for this account",
+		})
+		return errResp, http.StatusNotFound, nil
+	}
+
 	data := map[string]thirdPartyAnalyticsJSON{
 		chartType: {
 			Values:   chartData.outputValues,

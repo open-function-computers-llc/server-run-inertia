@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -19,17 +20,18 @@ func (s *server) bindRoutes() {
 
 	protectedRoutes := map[string]http.HandlerFunc{
 		// inertia pages
-		"GET /dashboard":                 s.handleDashboard(),
-		"GET /create-account":            s.handlePage("Account/Create"),
-		"GET /account/{accountName}":     s.handleAccountDetails(""),
-		"GET /importable-accounts":       s.handleListImportableAccounts(),
-		"GET /logout":                    s.handleLogout(),
-		"GET /settings":                  s.handleSettings(),
-		"GET /vcs":                       s.handleVcs(),
-		"GET /accounts/{name}/analytics": s.handleAccountAnalytics(),
+		"GET /dashboard":                    s.handleDashboard(),
+		"GET /create-account":               s.handlePage("Account/Create"),
+		"GET /account/{accountName}":        s.handleAccountDetails(""),
+		"GET /importable-accounts":          s.handleListImportableAccounts(),
+		"GET /logout":                       s.handleLogout(),
+		"GET /settings":                     s.handleSettings(),
+		"GET /vcs":                          s.handleVcs(),
+		"GET /accounts/{account}/analytics": s.handleAccountAnalytics(),
 	}
 
 	for path, handler := range protectedRoutes {
+		fmt.Println("Registering protected route:", path)
 		s.router.Handle(path, s.inertiaManager.Middleware(s.LogRequest(s.ProtectRequest(handler))))
 	}
 

@@ -1,55 +1,111 @@
 <template>
-    <div class="account-analytics">
-        <h3>Account Analytics</h3>
+  <div class="p-4">
+    <h2 class="text-xl font-bold mb-4">Analytics</h2>
 
-        <div v-if="loading" class="text-gray-500">Loading analytics...</div>
-        <div v-else>
-            <Line v-if="chartData" :data="chartData" :options="chartOptions" />
-        </div>
+    <div v-if="loading" class="text-gray-500">Loading analytics...</div>
+
+    <div v-else-if="error" class="text-red-600">
+      {{ error }}
     </div>
+
+    <div v-else-if="!chartData">
+      <p class="text-gray-500">No analytics data available.</p>
+    </div>
+
+    <div v-else class="chart-container">
+      <Line :data="chartData" :options="chartOptions" />
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Line } from 'vue-chartjs'
-import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js'
 import axios from 'axios'
+import { Line } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  PointElement
+} from 'chart.js'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement)
 
 const props = defineProps({
     account: {
-        type: Object,
-        default: {}
+      type: Object,
+      default: {}
     }
 })
 
+const loading = ref(true)
+const error = ref(null)
 const chartData = ref(null)
-const chartOptions = ref({
+const chartType = 'bandwidth'
+
+const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-})
-const loading = ref(true)
+  plugins: {
+    legend: {
+      labels: {
+        color: '#333'
+      }
+    }
+  },
+  scales: {
+    x: {
+      ticks: {
+        color: '#666'
+      }
+    },
+    y: {
+      ticks: {
+        color: '#666'
+      }
+    }
+  },
+}
 
 onMounted(async () => {
   try {
-    const res = await axios.get(`/accounts/${props.account.name}/analytics?type=visitors`)
-    const data = res.data.visitors
+    console.log('Fetching analytics for', props.account.name)
+    const res = await axios.get(`/accounts/${props.account.name}/analytics`, {
+      params: { type: chartType },
+    })
+    console.log('Analytics response:', res.data)
+
+    if (res.data.error) {
+      error.value = res.data.error
+      return
+    }
+
+    const data = res.data[chartType]
+    if (!data || !data.Values || data.Values.length === 0) {
+      error.value = 'No analytics data available.'
+      return
+    }
 
     chartData.value = {
       labels: Array.from({ length: data.Values.length }, (_, i) => i + 1),
       datasets: [
         {
-          label: 'Visitors',
+          label: chartType,
           data: data.Values,
           borderColor: '#4F46E5',
           backgroundColor: 'rgba(79,70,229,0.1)',
-          tension: 0.4,
+          tension: 0.3,
+          fill: true,
         },
       ],
     }
   } catch (err) {
     console.error('Failed to load analytics', err)
+    error.value = err.response?.data?.error || 'Failed to load analytics data.'
   } finally {
     loading.value = false
   }
