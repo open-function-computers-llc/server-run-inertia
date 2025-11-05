@@ -1,7 +1,13 @@
 <template>
 <div class="p-4">
   <h2 class="text-xl font-bold mb-4">Analytics</h2>
-  <input type="text" v-model="chartType" />
+  <SelectInput label="Chart Type" v-model="chartType" :options="[
+    { label: 'Bandwidth', val: 'bandwidth' },
+    { label: 'Total Requests', val: 'total-requests' },
+    { label: 'Unique Visitors', val: 'unique-visitors' },
+  ]"
+      option-text="label"
+      option-value="val" />
 
   <Spinner v-if="isLoading" />
 
@@ -34,7 +40,8 @@ import {
   LinearScale,
   PointElement
 } from 'chart.js'
-import Spinner from '../Spinner.vue'
+import Spinner from '../Spinner.vue';
+import SelectInput from '../SelectInput.vue';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, LineElement, CategoryScale, LinearScale, PointElement)
 

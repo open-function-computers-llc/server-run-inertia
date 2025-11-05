@@ -28,7 +28,7 @@
 
 <ScriptRunner v-else
     script="addAccount"
-    :envvars="{ ACCOUNT_NAME: newAccountName }"
+    :envvars="{ ACCOUNT_NAME: newAccountName, INSTALL_WP: isWordpress ? 'true' : 'false', INSTALL_RAD: isRAD ? 'true' : 'false' }"
     :completeHref="'/account/' + newAccountName" />
 </template>
 
