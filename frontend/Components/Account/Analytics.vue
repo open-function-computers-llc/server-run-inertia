@@ -116,7 +116,7 @@ watch(chartType, async () => {
     isLoading.value = false
   }
 })
-chartType.value = 'visitors';
+chartType.value = 'bandwidth';
 </script>
 
 <style scoped>

@@ -598,7 +598,7 @@ func (s *server) getAnalyticsJSON(accountName, chartType string) ([]byte, int, e
 
 	if !slices.Contains([]string{"bandwidth", "unique-visitors, total-requests"}, chartType) {
 		errResp, _ := json.Marshal(map[string]string{
-			"error": "invalid `type`, pass either 'bandwidth' or 'visitors'",
+			"error": "invalid `type`, pass either 'bandwidth', 'unique-visitors', or 'total-requests'",
 		})
 		return errResp, http.StatusBadRequest, nil
 	}
