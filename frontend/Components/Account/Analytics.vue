@@ -22,12 +22,13 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
-import { Line } from 'vue-chartjs'
+import { Bar, Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   Title,
   Tooltip,
   Legend,
+  BarElement,
   LineElement,
   CategoryScale,
   LinearScale,
@@ -35,7 +36,7 @@ import {
 } from 'chart.js'
 import Spinner from '../Spinner.vue'
 
-ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement)
+ChartJS.register(Title, Tooltip, Legend, BarElement, LineElement, CategoryScale, LinearScale, PointElement)
 
 const props = defineProps({
   account: {
@@ -46,7 +47,10 @@ const props = defineProps({
 
 const isLoading = ref(false)
 const error = ref(null)
-const chartData = ref([])
+const chartData = ref({
+  labels: [],
+  datasets: []
+})
 const chartType = ref('')
 
 const chartOptions = {
@@ -87,22 +91,21 @@ watch(chartType, async () => {
       return
     }
 
-    const data = res.data[chartType]
-    if (!data || !data.Values || data.Values.length === 0) {
+    const data = res.data[chartType.value]
+    if (!data || !data.values || data.values.length === 0) {
       error.value = 'No analytics data available.'
       return
     }
 
     chartData.value = {
-      labels: Array.from({ length: data.Values.length }, (_, i) => i + 1),
+      labels: Array.from({ length: data.values.length }, (_, i) => i + 1),
       datasets: [
         {
-          label: chartType,
-          data: data.Values,
+          label: chartType.value,
+          data: data.values,
           borderColor: '#4F46E5',
-          backgroundColor: 'rgba(79,70,229,0.1)',
-          tension: 0.3,
-          fill: true,
+          backgroundColor: 'rgba(79,70,229)',
+          tension: 0.1,
         },
       ],
     }
@@ -113,7 +116,7 @@ watch(chartType, async () => {
     isLoading.value = false
   }
 })
-chartType.value = 'bandwidth';
+chartType.value = 'visitors';
 </script>
 
 <style scoped>
