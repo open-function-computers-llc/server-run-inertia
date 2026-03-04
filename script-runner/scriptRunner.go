@@ -38,8 +38,11 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 	// set up the command runner
 	var cmd *exec.Cmd
 	if t == ARGSCRIPT {
-		// TODO: add the arguments here correctly
-		cmd = exec.Command(scriptsRoot + argumentScripts[scriptName])
+		argValues := []string{}
+		for _, a := range args {
+			argValues = append(argValues, a)
+		}
+		cmd = exec.Command(scriptsRoot+argumentScripts[scriptName], argValues...)
 	}
 
 	if t == PLAINSCRIPT {

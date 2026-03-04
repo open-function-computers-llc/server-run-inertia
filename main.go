@@ -68,6 +68,7 @@ func verifyValidENV() (int, string, error) {
 		"THIRD_PARTY_ACCESS_TOKEN",
 		"WEBSITES_ROOT",
 		"ACCOUNTS_ROOT",
+		"APP_SOCKET_PATH",
 	}
 
 	for _, env := range requiredENV {

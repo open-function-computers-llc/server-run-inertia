@@ -31,6 +31,7 @@ type server struct {
 	defaultLogo     []byte
 	vcsProvider     vcs.Provider
 	vcsErrorMessage string
+	socketPath      string
 }
 
 func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
@@ -88,6 +89,8 @@ func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
 	}
 
 	s.bindRoutes()
+
+	go s.setupSocket()
 
 	return s, nil
 }
