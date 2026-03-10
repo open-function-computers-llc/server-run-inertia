@@ -38,6 +38,10 @@ var envScripts = map[string]envScript{
 		filename:     "change-wordpress-domain.sh",
 		requiredEnvs: []string{"DOMAIN", "ACCOUNT"},
 	},
+	"update-uptime-uri": {
+		filename:     "update-uptime-uri.sh",
+		requiredEnvs: []string{"ACCOUNT", "UPTIME_URI"},
+	},
 }
 
 type envScript struct {

@@ -20,14 +20,23 @@ func (s *server) bindRoutes() {
 
 	protectedRoutes := map[string]http.HandlerFunc{
 		// inertia pages
-		"GET /dashboard":                    s.handleDashboard(),
-		"GET /create-account":               s.handlePage("Account/Create"),
-		"GET /account/{accountName}":        s.handleAccountDetails(""),
-		"GET /importable-accounts":          s.handleListImportableAccounts(),
-		"GET /logout":                       s.handleLogout(),
-		"GET /settings":                     s.handleSettings(),
-		"GET /vcs":                          s.handleVcs(),
-		"GET /accounts/{account}/analytics": s.handleAccountAnalytics(),
+		"GET /dashboard":                    			s.handleDashboard(),
+		"GET /create-account":               			s.handlePage("Account/Create"),
+		"GET /account/{accountName}":        			s.handleAccountDetails(""),
+		"GET /importable-accounts":          			s.handleListImportableAccounts(),
+		"GET /logout":                       			s.handleLogout(),
+		"GET /settings":                     			s.handleSettings(),
+		"GET /vcs":                          			s.handleVcs(),
+		"GET /accounts/{account}/analytics": 			s.handleAccountAnalytics(),
+		"POST /accounts/{account}/domains":           	s.handleAddDomain(),
+    	"PUT /accounts/{account}/domains/primary":    	s.handleSetPrimaryDomain(),
+    	"DELETE /accounts/{account}/domains/{domain}": 	s.handleDeleteDomain(),
+		"PUT /accounts/{account}/uptime-uri": s.handleSetUptimeURI(),
+	}
+
+	// Merge domain routes
+	for path, handler := range s.domainRoutes() {
+		protectedRoutes[path] = handler
 	}
 
 	for path, handler := range protectedRoutes {

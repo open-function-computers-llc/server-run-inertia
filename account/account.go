@@ -212,3 +212,8 @@ func (a *Account) AddDatabase(host, user, pass, name string) error {
 
 	return a.writeSettingsFile()
 }
+
+func (a *Account) SetUptimeURI(uri string) error {
+    a.UptimeURI = strings.TrimSpace(uri)
+    return a.writeSettingsFile()
+}

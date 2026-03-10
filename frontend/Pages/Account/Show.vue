@@ -26,9 +26,9 @@
     </div>
 
     <SubNav :name="account.name" :activeTab="activeTab" @update-tab="activeTab = $event" />
-    <br />
-    <br />
-    <component :is="tabComponents[activeTab]" :account="account" />
+    <div class="p-4">
+        <component :is="tabComponents[activeTab]" :account="account" />
+    </div>
 
     <ScriptRunner v-if="runClone" script="cloneAccount" :args="{ ACCOUNT_NAME: 'yippe!' }" @done="() => { runClone = false; }" />
 
