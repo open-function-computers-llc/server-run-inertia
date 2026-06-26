@@ -23,14 +23,14 @@ func (s *server) ProtectRequest(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		cookieIsValid, validUntil := session.Validate(sessionCookie.Value)
+		cookieIsValid, validUntil := session.Validate(s.logger, sessionCookie.Value)
 		if !cookieIsValid {
 			ctx := s.inertiaManager.WithProp(r.Context(), "errMessage", "invalid cookie")
 			http.Redirect(w, r.WithContext(ctx), "/login", http.StatusSeeOther)
 			return
 		}
 
-		w.Header().Add("X-Expires-In", strconv.Itoa(int(time.Until(validUntil).Seconds())))
-		next(w, r)
+		ctx := s.inertiaManager.WithProp(r.Context(), "expiresIn", strconv.Itoa(int(time.Until(validUntil).Seconds())))
+		next(w, r.WithContext(ctx))
 	}
 }

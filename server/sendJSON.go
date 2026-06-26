@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func sendJSON(w http.ResponseWriter, data interface{}) {
+func sendJSON(w http.ResponseWriter, data any) {
 	w.Header().Add("content-type", "application/json")
 	bytes, err := json.Marshal(data)
 	if err != nil {
@@ -17,7 +17,7 @@ func sendJSON(w http.ResponseWriter, data interface{}) {
 	w.Write(bytes)
 }
 
-func sendJSONError(w http.ResponseWriter, statusCode int, data interface{}) {
+func sendJSONError(w http.ResponseWriter, statusCode int, data any) {
 	w.Header().Add("content-type", "application/json")
 	w.WriteHeader(statusCode)
 	bytes, _ := json.Marshal(data)

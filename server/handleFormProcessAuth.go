@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -20,12 +19,15 @@ func (s *server) handleFormProcessAuth() http.HandlerFunc {
 		var payload incomingPayload
 		bytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			sendJSON(w, "Error reading payload body")
+			s.inertiaManager.Share("error", "Error reading payload body")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
+
 		err = json.Unmarshal(bytes, &payload)
 		if err != nil {
-			sendJSON(w, "Invalid JSON Body")
+			s.inertiaManager.Share("error", "Invalid JSON Body")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
@@ -36,7 +38,6 @@ func (s *server) handleFormProcessAuth() http.HandlerFunc {
 		}
 
 		if payload.Username != s.authUser || payload.Password != s.authPassword {
-			fmt.Println(payload.Username, s.authUser, payload.Password, s.authPassword)
 			s.inertiaManager.Share("error", "Invalid Credentials")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return

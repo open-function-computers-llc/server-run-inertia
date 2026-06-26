@@ -13,7 +13,7 @@ func (s *server) handleAccountDetails(tab string) http.HandlerFunc {
 		var a account.Account
 		foundAccount := false
 		for _, acc := range s.accounts {
-			if acc.Name == r.PathValue("accountName") {
+			if acc.Name == r.PathValue("account") {
 				a = acc
 				foundAccount = true
 				break
@@ -21,9 +21,8 @@ func (s *server) handleAccountDetails(tab string) http.HandlerFunc {
 		}
 
 		if !foundAccount {
-			s.inertiaManager.Render(w, r, "Error", map[string]any{
-				"account": a, // TODO: fix this prob bundle
-			})
+			s.inertiaManager.Share("error", "Account not found: "+r.PathValue("account"))
+			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 			return
 		}
 

@@ -35,7 +35,7 @@ func (s *server) setupSocket() {
 	exec.Command("/usr/sbin/restorecon", socketPath).Run()
 
 	defer listener.Close()
-	s.logger.Info("Listening on", socketPath)
+	s.logger.Info("Listening on ", socketPath)
 
 	var wg sync.WaitGroup
 	for {

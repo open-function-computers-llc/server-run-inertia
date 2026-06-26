@@ -10,7 +10,7 @@
             <span>Error Logs:</span>
             <button class="btn btn-primary btn-sm" @click="runErrorLog = true">Export</button>
         </div>
-        <ScriptRunner v-if="runAccessLog" script="log-viewer" :args="{ LOG_TYPE: 'access' }" @done="() => { runAccessLog = false; }" />
+        <ScriptRunner v-if="runAccessLog" script="log-viewer" :args="{ LOG_TYPE: 'access', account: account.name }" @done="() => { runAccessLog = false; }" />
         <ScriptRunner v-if="runErrorLog" script="log-viewer" :args="{ LOG_TYPE: 'error' }" @done="() => { runErrorLog = false; }" />
     </div>
 </div>

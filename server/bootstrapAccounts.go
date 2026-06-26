@@ -11,7 +11,7 @@ import (
 func (s *server) bootstrapAccounts() error {
 	s.accounts = []account.Account{}
 
-	stdout, err := exec.Command("ls", os.Getenv("WEBSITES_ROOT")).Output()
+	stdout, err := exec.Command("ls", os.Getenv("ACCOUNTS_ROOT")).Output()
 	if err != nil {
 		return err
 	}

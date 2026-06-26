@@ -1,11 +1,11 @@
 package session
 
 import (
-	"fmt"
 	"os"
 	"time"
 
 	"github.com/dchest/uniuri"
+	"github.com/sirupsen/logrus"
 )
 
 type SessionBag struct {
@@ -36,16 +36,16 @@ func Initialize() *SessionBag {
 	return sBag
 }
 
-func Validate(key string) (bool, time.Time) {
+func Validate(logger *logrus.Logger, key string) (bool, time.Time) {
+	logger.Debug("Validating session")
 	appMode := os.Getenv("APP_ENV")
 	if appMode == "development" {
-		fmt.Println(appMode)
-		return true, time.Now()
+		return true, time.Now().Add(time.Second * 60)
 	}
 
 	sess, ok := sBag.sessions[key]
 	if !ok {
-		return false, time.Now()
+		return false, time.Now().Add(time.Second * -1)
 	}
 
 	if time.Now().After(sess.expiresAt) {

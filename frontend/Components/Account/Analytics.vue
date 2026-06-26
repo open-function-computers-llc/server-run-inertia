@@ -254,7 +254,7 @@ watch(chartType, async () => {
     error.value = null;
     console.log('Fetching analytics for', props.account.name, 'type:', chartType.value)
 
-    const res = await axios.get(`/accounts/${props.account.name}/analytics`, {
+    const res = await axios.get(`/api/accounts/${props.account.name}/analytics`, {
       params: { type: chartType.value },
     })
 

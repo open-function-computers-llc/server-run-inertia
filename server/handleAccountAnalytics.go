@@ -14,7 +14,11 @@ func (s *server) handleAccountAnalytics() http.HandlerFunc {
 			chartType = "bandwidth"
 		}
 
-		bytes, status, _ := s.getAnalyticsJSON(account, chartType)
+		bytes, status, err := s.getAnalyticsJSON(account, chartType)
+		if err != nil {
+			s.logger.Error(err)
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
 		w.Write(bytes)

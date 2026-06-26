@@ -12,7 +12,7 @@ import (
 type Account struct {
 	IsLocked                  bool       `json:"isLocked"`
 	Name                      string     `json:"name"`
-	UptimeURI                 string     `json:"uptimeURI"`
+	UptimeURL                 string     `json:"uptimeURL"`
 	Username                  string     `json:"username"`
 	PrimaryDomain             string     `json:"domain"`
 	AlternateDomains          []string   `json:"alternateDomains"`
@@ -35,11 +35,15 @@ func Find(name string) (*Account, error) {
 
 	if a.CreatedAt.IsZero() {
 		folderPath, _ := a.stateDirectory()
+		fmt.Println("folderpath: " + folderPath)
 		if err != nil {
 			return nil, err
 		}
 
-		folder, _ := os.Stat(folderPath)
+		folder, err := os.Stat(folderPath)
+		if err != nil {
+			return nil, err
+		}
 
 		a.CreatedAt = folder.ModTime()
 	}
@@ -68,15 +72,11 @@ func (a *Account) stateDirectory() (string, error) {
 			return "", err
 		}
 	}
+	fmt.Println("account home: " + accountHome)
 	return accountHome, nil
 }
 
 func (a *Account) refreshStatus() error {
-	// must have a valid name
-	if strings.TrimSpace(a.Name) == "" {
-		return ErrorInvalidAccountName
-	}
-
 	// account "home" must exist
 	folderPath, err := a.stateDirectory()
 	if err != nil {
@@ -213,7 +213,7 @@ func (a *Account) AddDatabase(host, user, pass, name string) error {
 	return a.writeSettingsFile()
 }
 
-func (a *Account) SetUptimeURI(uri string) error {
-    a.UptimeURI = strings.TrimSpace(uri)
-    return a.writeSettingsFile()
+func (a *Account) SetUptimeURL(url string) error {
+	a.UptimeURL = strings.TrimSpace(url)
+	return a.writeSettingsFile()
 }

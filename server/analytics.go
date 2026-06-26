@@ -42,18 +42,30 @@ type anaylticJSON struct {
 		Metadata struct {
 			Bytes struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"bytes"`
 			Visitors struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"visitors"`
 			Hits struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"hits"`
 			Data struct {
 				Unique int `json:"unique"`
@@ -79,18 +91,30 @@ type anaylticJSON struct {
 		Metadata struct {
 			Bytes struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"bytes"`
 			Visitors struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"visitors"`
 			Hits struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"hits"`
 			Data struct {
 				Unique int `json:"unique"`
@@ -118,18 +142,30 @@ type anaylticJSON struct {
 		Metadata struct {
 			Bytes struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"bytes"`
 			Visitors struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"visitors"`
 			Hits struct {
 				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
+				Max   struct {
+					Value int `json:"value"`
+				} `json:"max"`
+				Min struct {
+					Value int `json:"value"`
+				} `json:"min"`
 			} `json:"hits"`
 			Data struct {
 				Unique int `json:"unique"`
@@ -153,366 +189,6 @@ type anaylticJSON struct {
 			Data     string `json:"data"`
 		} `json:"data"`
 	} `json:"static_requests"`
-	NotFound struct {
-		Metadata struct {
-			Bytes struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"bytes"`
-			Visitors struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"visitors"`
-			Hits struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"hits"`
-			Data struct {
-				Unique int `json:"unique"`
-			} `json:"data"`
-		} `json:"metadata"`
-		Data []struct {
-			Hits struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"hits"`
-			Visitors struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"visitors"`
-			Bytes struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"bytes"`
-			Method   string `json:"method"`
-			Protocol string `json:"protocol"`
-			Data     string `json:"data"`
-		} `json:"data"`
-	} `json:"not_found"`
-	Hosts struct {
-		Metadata struct {
-			Bytes struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"bytes"`
-			Visitors struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"visitors"`
-			Hits struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"hits"`
-			Data struct {
-				Unique int `json:"unique"`
-			} `json:"data"`
-		} `json:"metadata"`
-		Data []struct {
-			Hits struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"hits"`
-			Visitors struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"visitors"`
-			Bytes struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"bytes"`
-			Data    string   `json:"data"`
-			Country string   `json:"country"`
-			Items   []string `json:"items"`
-		} `json:"data"`
-	} `json:"hosts"`
-	Os struct {
-		Metadata struct {
-			Bytes struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"bytes"`
-			Visitors struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"visitors"`
-			Hits struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"hits"`
-			Data struct {
-				Unique int `json:"unique"`
-			} `json:"data"`
-		} `json:"metadata"`
-		Data []struct {
-			Hits struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"hits"`
-			Visitors struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"visitors"`
-			Bytes struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"bytes"`
-			Data  string `json:"data"`
-			Items []struct {
-				Hits struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"hits"`
-				Visitors struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"visitors"`
-				Bytes struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"bytes"`
-				Data string `json:"data"`
-			} `json:"items"`
-		} `json:"data"`
-	} `json:"os"`
-	Browsers struct {
-		Metadata struct {
-			Bytes struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"bytes"`
-			Visitors struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"visitors"`
-			Hits struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"hits"`
-			Data struct {
-				Unique int `json:"unique"`
-			} `json:"data"`
-		} `json:"metadata"`
-		Data []struct {
-			Hits struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"hits"`
-			Visitors struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"visitors"`
-			Bytes struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"bytes"`
-			Data  string `json:"data"`
-			Items []struct {
-				Hits struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"hits"`
-				Visitors struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"visitors"`
-				Bytes struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"bytes"`
-				Data string `json:"data"`
-			} `json:"items"`
-		} `json:"data"`
-	} `json:"browsers"`
-	VisitTime struct {
-		Metadata struct {
-			Bytes struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"bytes"`
-			Visitors struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"visitors"`
-			Hits struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"hits"`
-			Data struct {
-				Unique int `json:"unique"`
-			} `json:"data"`
-		} `json:"metadata"`
-		Data []struct {
-			Hits struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"hits"`
-			Visitors struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"visitors"`
-			Bytes struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"bytes"`
-			Data string `json:"data"`
-		} `json:"data"`
-	} `json:"visit_time"`
-	ReferringSites struct {
-		Metadata struct {
-			Bytes struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"bytes"`
-			Visitors struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"visitors"`
-			Hits struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"hits"`
-			Data struct {
-				Unique int `json:"unique"`
-			} `json:"data"`
-		} `json:"metadata"`
-		Data []struct {
-			Hits struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"hits"`
-			Visitors struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"visitors"`
-			Bytes struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"bytes"`
-			Data string `json:"data"`
-		} `json:"data"`
-	} `json:"referring_sites"`
-	StatusCodes struct {
-		Metadata struct {
-			Bytes struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"bytes"`
-			Visitors struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"visitors"`
-			Hits struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"hits"`
-			Data struct {
-				Unique int `json:"unique"`
-			} `json:"data"`
-		} `json:"metadata"`
-		Data []struct {
-			Hits struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"hits"`
-			Visitors struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"visitors"`
-			Bytes struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"bytes"`
-			Data  string `json:"data"`
-			Items []struct {
-				Hits struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"hits"`
-				Visitors struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"visitors"`
-				Bytes struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"bytes"`
-				Data string `json:"data"`
-			} `json:"items"`
-		} `json:"data"`
-	} `json:"status_codes"`
-	Geolocation struct {
-		Metadata struct {
-			Bytes struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"bytes"`
-			Visitors struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"visitors"`
-			Hits struct {
-				Count int `json:"count"`
-				Max   int `json:"max"`
-				Min   int `json:"min"`
-			} `json:"hits"`
-			Data struct {
-				Unique int `json:"unique"`
-			} `json:"data"`
-		} `json:"metadata"`
-		Data []struct {
-			Hits struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"hits"`
-			Visitors struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"visitors"`
-			Bytes struct {
-				Count   int    `json:"count"`
-				Percent string `json:"percent"`
-			} `json:"bytes"`
-			Data  string `json:"data"`
-			Items []struct {
-				Hits struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"hits"`
-				Visitors struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"visitors"`
-				Bytes struct {
-					Count   int    `json:"count"`
-					Percent string `json:"percent"`
-				} `json:"bytes"`
-				Data string `json:"data"`
-			} `json:"items"`
-		} `json:"data"`
-	} `json:"geolocation"`
 }
 
 type processedChartData struct {
@@ -540,7 +216,6 @@ func processAnalyticDataForAccount(account string, dataToFetch string) (processe
 		tooltipDecimals:  0,
 	}
 
-	// TODO: look in reports folder for all json files that start with the account name
 	allReports, err := os.ReadDir(os.Getenv("REPORTS_ROOT"))
 	if err != nil {
 		return chartData, err
@@ -596,7 +271,7 @@ func (s *server) getAnalyticsJSON(accountName, chartType string) ([]byte, int, e
 		return errResp, http.StatusBadRequest, nil
 	}
 
-	if !slices.Contains([]string{"bandwidth", "unique-visitors", "total-requests"}, chartType) {
+	if !slices.Contains([]string{"bandwidth", "visitors", "unique-visitors", "total-requests"}, chartType) {
 		errResp, _ := json.Marshal(map[string]string{
 			"error": "invalid `type`, pass either 'bandwidth', 'unique-visitors', or 'total-requests'",
 		})

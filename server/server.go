@@ -46,6 +46,12 @@ func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
 		authPassword:   os.Getenv("AUTH_PASSWORD"),
 		defaultLogo:    logo,
 	}
+
+	// set debug loggin if we are in dev mode
+	if os.Getenv("APP_ENV") == "development" {
+		s.logger.SetLevel(logrus.DebugLevel)
+	}
+
 	err := s.bootstrapAccounts()
 	if err != nil {
 		return s, err
