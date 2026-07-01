@@ -16,7 +16,7 @@ func (s *server) bindRoutes() {
 		"POST /handle-auth": s.handleFormProcessAuth(),
 		"GET /error":        s.handlePage("Error"),
 		"GET /logo":         s.handleLogo(),
-		"/":                 s.handlePage("Index"),
+		"GET /":             s.handlePage("Index"),
 	}
 
 	for path, handler := range openRoutes {
@@ -106,7 +106,7 @@ func (s *server) bindRoutes() {
 	s.logger.Debug("")
 	s.logger.Debug("MOUNTING ROUTE FILESYSTEM AT: /dist/*")
 
-	s.router.Handle("/dist/", http.FileServer(http.FS(s.distFS)))
+	s.router.Handle("GET /dist/", http.FileServer(http.FS(s.distFS)))
 
 	s.logger.Debug("---")
 	s.logger.Debug("Route binding complete!")
