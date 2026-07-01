@@ -13,3 +13,17 @@ $transition-time: 1s;
 
 // bootstrap overrides
 $grid-gutter-width: 30px;
+
+// New Open Design colors
+$c-od-bg:        oklch(18% 0.015 275);
+$c-od-surface:   oklch(24% 0.018 275);
+$c-od-surface-hi: oklch(30% 0.02 275);
+$c-od-fg:        oklch(97% 0.003 275);
+$c-od-muted:     oklch(58% 0.02 275);
+$c-od-border:    oklch(32% 0.018 275);
+$c-od-accent:    oklch(65% 0.18 295);
+$c-od-accent-hi: oklch(72% 0.20 295);
+$c-od-accent-sub: oklch(55% 0.14 295);
+$c-od-danger:    oklch(60% 0.18 20);
+$c-od-success:   oklch(70% 0.14 145);
+$c-od-warn:      oklch(72% 0.14 75);

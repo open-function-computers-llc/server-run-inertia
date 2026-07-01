@@ -25,12 +25,12 @@
         <h2>Account Actions</h2>
     </div>
 
-    <SubNav :name="account.name" :activeTab="activeTab" @update-tab="activeTab = $event" />
+    <SubNav :sshPubKey="account.sshPubKey" :activeTab="activeTab" @update-tab="activeTab = $event" />
     <div class="p-4">
         <component :is="tabComponents[activeTab]" :account="account" />
     </div>
 
-    <ScriptRunner v-if="runClone" script="cloneAccount" :args="{ ACCOUNT_NAME: 'yippe!' }" @done="() => { runClone = false; }" />
+    <ScriptRunner v-if="runClone" script="cloneAccount" :args="{ ACCOUNT_NAME: account.name }" @done="() => { runClone = false; }" />
 
 </div>
 </template>

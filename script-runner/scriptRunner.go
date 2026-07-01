@@ -29,7 +29,6 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 
 	if err != nil {
 		*communicationChannel <- err.Error()
-		close(*communicationChannel)
 		return
 	}
 

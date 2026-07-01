@@ -2,9 +2,8 @@
     <div class="pubkey">
         <h3>Account SSH PubKey</h3>
         <!-- <div class="pubkey-viewer" :class="{ copying: temporaryCopyAnimationShowing }" @click="sshPubkeyToClipboard(account.sshPubKey)"> -->
-        <div class="pubkey-viewer" :class="{ copying: temporaryCopyAnimationShowing }" @click="sshPubkeyToClipboard(tempPubKey)">
-            <!-- {{ account.sshPubKey }} -->
-            {{ tempPubKey }}
+        <div class="pubkey-viewer" :class="{ copying: temporaryCopyAnimationShowing }" @click="sshPubkeyToClipboard(account.sshPubKey)">
+            {{ account.sshPubKey }}
         </div>
     </div>
 </template>
@@ -18,8 +17,6 @@ const props = defineProps({
         default: {}
     }
 })
-
-const tempPubKey = 'Harcoded for testing copying functionality, yo!'
 
 const temporaryCopyAnimationShowing = ref(false)
 

@@ -42,7 +42,7 @@
 
     <Modal v-if="addDomainNow">
         <ScriptRunner
-            script="add-domain-to-account"
+            script="addDomainToAccount"
             :envvars="{ SITE: account.name, DOMAIN: newDomain }"
             @done="onDone"
             @error="onError" />

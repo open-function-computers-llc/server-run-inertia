@@ -34,7 +34,7 @@
         <Modal v-if="isUpdating">
             <ScriptRunner
                 script="update-uptime-uri"
-                :envvars="{ ACCOUNT: account, UPTIME_URI: newUptimeURI }"
+                :envvars="{ ACCOUNT: account.name, UPTIME_URI: newUptimeURI }"
                 @done="onDone" />
         </Modal>
     </div>
@@ -59,7 +59,7 @@
         <Modal v-if="isTerminating">
             <ScriptRunner
                 script="terminateAccount"
-                :envvars="{ ACCOUNT_TO_DELETE: account }"
+                :envvars="{ ACCOUNT_TO_DELETE: account.name }"
                 @done="onTerminate" />
         </Modal>
     </div>
@@ -116,7 +116,7 @@ function terminate() {
 function onDone() {
     isUpdating.value = false
     emit('updated', { ...props.account, uptimeURI: newUptimeURI.value.trim() })
-    cancel()
+    cancelUptime()
 }
 
 function onTerminate() {
