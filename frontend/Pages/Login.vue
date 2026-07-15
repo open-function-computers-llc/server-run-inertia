@@ -18,7 +18,7 @@
             <p class="subtitle">Manage accounts, review logs, and monitor server health across your infrastructure.</p>
 
             <div class="field">
-                <label for="username">Username or email</label>
+                <label for="username">Username</label>
                 <input
                     type="text"
                     id="username"
