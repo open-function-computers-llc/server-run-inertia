@@ -1,10 +1,16 @@
 <template>
-<div :class="wrapperClasses">
-    <label v-if="label" class="form-label" :for="id">
-        {{ label }}
-        <template v-if="required">*</template>
+<div class="select-field">
+    <label v-if="label" :for="id">
+        {{ label }}<template v-if="required"> *</template>
     </label>
-    <select :style="'width:' + width" class="form-select" :value="modelValue" :required="required" :disabled="disabled" @input="$emit('update:modelValue', $event.target.value)" ref="input">
+    <select
+        :id="id"
+        :style="'width:' + width"
+        :value="modelValue"
+        :required="required"
+        :disabled="disabled"
+        @input="$emit('update:modelValue', $event.target.value)"
+        ref="input">
         <option value="" disabled v-html="placeholder"></option>
         <option v-for="(option, i) in options" :value="parseOptionValue(option)" :key="'option-' + i">
             {{ parseOptionText(option) }}
@@ -40,10 +46,6 @@ export default {
             type: String,
             default: "",
         },
-        classes: {
-            type: [String, Array],
-            default: "",
-        },
         id: {
             type: String,
             default: 'select-input'
@@ -62,39 +64,24 @@ export default {
         },
         width: {
             type: String,
-            default: '100px'
+            default: '100%'
         },
         disabled: {
             type: Boolean,
             default: false
         },
     },
-    data() {
-        return {
-            input: null,
-            wrapperClasses: ['mb-3'],
-        }
-    },
-    mounted() {
-        if (Array.isArray(this.classes)) {
-            wrapperClasses.value = this.classes;
-        } else if (typeof this.classes === 'string') {
-            this.wrapperClasses = this.classes.split(" ")
-        }
-    },
     methods: {
         parseOptionText(o) {
             if (o[this.optionText]) {
                 return this.optionTextPrepend + o[this.optionText];
             }
-
             return o;
         },
         parseOptionValue(o) {
             if (o[this.optionValue]) {
                 return o[this.optionValue];
             }
-
             return o;
         }
     }
@@ -104,13 +91,44 @@ export default {
 <style lang="scss" scoped>
 @import "../scss/variables.scss";
 
-input {
-    border-radius: 0;
-    border-color: $c-backgroundLight;
+.select-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
 }
 
 label {
-    font-weight: bold;
-    margin-bottom: 0.25rem;
+    font-size: 13px;
+    font-weight: 600;
+    color: $c-od-muted;
+    letter-spacing: 0.03em;
+}
+
+select {
+    background: $c-od-bg;
+    border: 1px solid $c-od-border;
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: $c-od-fg;
+    font-size: 15px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%238892a4' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+
+    &:focus {
+        border-color: $c-od-accent;
+        box-shadow: 0 0 0 3px oklch(65% 0.18 295 / 0.15);
+    }
+
+    option {
+        background: $c-od-surface;
+        color: $c-od-fg;
+    }
 }
 </style>

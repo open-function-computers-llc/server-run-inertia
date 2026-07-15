@@ -1,42 +1,37 @@
 <template>
-<div v-if="!isUpdatingURL">
-    <div v-if="!account.uptimeURL">
-        <p>Invalid uptime URL</p>
-    </div>
+<div v-if="!isUpdatingURL" class="uptime">
+    <div v-if="!account.uptimeURL" class="empty">No uptime URL configured.</div>
     <div v-else>
-        {{ account.uptimeURL }} Uptime:
-        <p v-if="info.error">{{ info.error }}</p>
-        <ul v-if="info.day1" class="list-group list-group-horizontal">
-            <li class="list-group-item d-flex flex-column" :class="{ 'list-group-item-success': info.day1 > 0.99 }">
+        <p class="uptime-url">{{ account.uptimeURL }}</p>
+        <p v-if="info.error" class="error-msg">{{ info.error }}</p>
+        <div v-if="info.day1" class="stat-row">
+            <div class="stat" :class="{ good: info.day1 > 0.99 }">
                 <small>Day</small>
-                {{ makePercentage(info.day1) }}
-            </li>
-            <li class="list-group-item d-flex flex-column" :class="{ 'list-group-item-success': info.day7 > 0.99 }">
+                <span>{{ makePercentage(info.day1) }}</span>
+            </div>
+            <div class="stat" :class="{ good: info.day7 > 0.99 }">
                 <small>Week</small>
-                {{ makePercentage(info.day7) }}
-            </li>
-            <li class="list-group-item d-flex flex-column" :class="{ 'list-group-item-success': info.day30 > 0.99 }">
+                <span>{{ makePercentage(info.day7) }}</span>
+            </div>
+            <div class="stat" :class="{ good: info.day30 > 0.99 }">
                 <small>Month</small>
-                {{ makePercentage(info.day30) }}
-            </li>
-            <li class="list-group-item d-flex flex-column" :class="{ 'list-group-item-success': info.day90 > 0.99 }">
+                <span>{{ makePercentage(info.day30) }}</span>
+            </div>
+            <div class="stat" :class="{ good: info.day90 > 0.99 }">
                 <small>Quarter</small>
-                {{ makePercentage(info.day90) }}
-            </li>
-        </ul>
+                <span>{{ makePercentage(info.day90) }}</span>
+            </div>
+        </div>
     </div>
-
-    <button
-        @click="isUpdatingURL = true"
-        class="btn btn-primary">
-        Update URL
-    </button>
+    <button @click="isUpdatingURL = true" class="btn-ghost">Update URL</button>
 </div>
 
-<div v-else>
-    <TextInput label="Domain Name in Uptime" v-model="form.uptimeURL" />
-    <button @click="isUpdatingURL = false">Cancel</button>
-    <button @click="update">Save</button>
+<div v-else class="uptime-edit">
+    <TextInput label="Uptime URL" v-model="form.uptimeURL" />
+    <div class="form-actions">
+        <button class="btn-ghost" @click="isUpdatingURL = false">Cancel</button>
+        <button class="btn-primary" @click="update">Save</button>
+    </div>
 </div>
 </template>
 
@@ -53,45 +48,114 @@ const props = defineProps({
     }
 });
 
-const info = ref({}); // this is where we store the uptime JSON
+const info = ref({});
 let infoInterval = null;
+
 const getUptimeInfo = () => {
-    axios.post("/api/get-uptime-info", {
-        url: props.account.uptimeURL,
-    }).then((res) => {
-        info.value = res.data;
-    }).catch((err) => {
-        info.value = err.response.data;
-        console.log(err);
-    });
+    axios.post("/api/get-uptime-info", { url: props.account.uptimeURL })
+        .then((res) => { info.value = res.data; })
+        .catch((err) => { info.value = err.response.data; });
 }
+
 if (props.account.uptimeURL) {
     getUptimeInfo();
-
-    infoInterval = setInterval(() => {
-        getUptimeInfo();
-    }, 5 * 60 * 1000); // 5 minutes
+    infoInterval = setInterval(getUptimeInfo, 5 * 60 * 1000);
 }
 
-onUnmounted(() => {
-    if (infoInterval) {
-        clearInterval(infoInterval);
-    }
-});
-
-
+onUnmounted(() => { if (infoInterval) clearInterval(infoInterval); });
 
 const isUpdatingURL = ref(false);
-const form = useForm({
-    uptimeURL: "",
-});
-const update = () => {
-    form.patch(`/accounts/${props.account.name}/uptime-url`, {
-        preserveState: false,
-    });
+const form = useForm({ uptimeURL: "" });
+const update = () => { form.patch(`/accounts/${props.account.name}/uptime-url`, { preserveState: false }); }
+const makePercentage = (dec) => (Math.round(dec * 10000) / 100) + "%";
+</script>
+
+<style lang="scss" scoped>
+@import "../scss/variables.scss";
+
+.uptime, .uptime-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 200px;
 }
 
-const makePercentage = (dec) => {
-    return (Math.round(dec * 10000) / 100) + "%"
+.uptime-url {
+    font-size: 12px;
+    color: $c-od-muted;
+    margin-bottom: 8px;
+    font-family: monospace;
 }
-</script>
+
+.stat-row {
+    display: flex;
+    gap: 8px;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid $c-od-border;
+    background: $c-od-bg;
+    min-width: 56px;
+
+    small {
+        font-size: 11px;
+        color: $c-od-muted;
+        margin-bottom: 4px;
+    }
+
+    span {
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: $c-od-muted;
+    }
+
+    &.good span { color: $c-od-success; }
+}
+
+.empty {
+    font-size: 13px;
+    color: $c-od-muted;
+}
+
+.error-msg {
+    font-size: 13px;
+    color: $c-od-danger;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-primary {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, $c-od-accent, $c-od-accent-sub);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    &:hover { opacity: 0.92; }
+}
+
+.btn-ghost {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid $c-od-border;
+    color: $c-od-muted;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    align-self: flex-start;
+    &:hover { background: $c-od-surface-hi; color: $c-od-fg; }
+}
+</style>

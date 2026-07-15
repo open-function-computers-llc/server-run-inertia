@@ -60,13 +60,51 @@ blockquote {padding: 2rem; border-left: 1px solid #333;}
 
 :root {
 	--font-system: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* https://css-tricks.com/snippets/css/system-font-stack */
-	--text-color: #333;
-	--featured-color: #03f;
-	--featured-color-hover: #69f;
-	--highlight-color: #fcd700;
+	--highlight-color: oklch(72% 0.14 75);
+
+	/* Dark theme tokens (default) */
+	--c-od-bg:         oklch(18% 0.015 275);
+	--c-od-surface:    oklch(24% 0.018 275);
+	--c-od-surface-hi: oklch(30% 0.02 275);
+	--c-od-fg:         oklch(97% 0.003 275);
+	--c-od-muted:      oklch(58% 0.02 275);
+	--c-od-border:     oklch(32% 0.018 275);
+	--c-od-accent:     oklch(65% 0.18 295);
+	--c-od-accent-hi:  oklch(72% 0.20 295);
+	--c-od-accent-sub: oklch(55% 0.14 295);
+	--c-od-danger:     oklch(60% 0.18 20);
+	--c-od-success:    oklch(70% 0.14 145);
+	--c-od-warn:       oklch(72% 0.14 75);
+	--c-od-overlay:    oklch(10% 0.01 275 / 0.85);
 }
 
-body {font-size: 16px; font-family: var(--font-system); color: var(--text-color);}
+:root[data-theme="light"] {
+	--c-od-bg:         oklch(96% 0.008 275);
+	--c-od-surface:    oklch(100% 0 0);
+	--c-od-surface-hi: oklch(93% 0.01 275);
+	--c-od-fg:         oklch(16% 0.012 275);
+	--c-od-muted:      oklch(46% 0.016 275);
+	--c-od-border:     oklch(86% 0.01 275);
+	--c-od-accent:     oklch(58% 0.20 295);
+	--c-od-accent-hi:  oklch(65% 0.22 295);
+	--c-od-accent-sub: oklch(48% 0.16 295);
+	--c-od-danger:     oklch(52% 0.22 20);
+	--c-od-success:    oklch(54% 0.18 145);
+	--c-od-warn:       oklch(56% 0.20 75);
+	--c-od-overlay:    oklch(10% 0.01 275 / 0.55);
+}
 
-a {color: var(--featured-color);}
-a:hover {color: var(--featured-color-hover);}
+body {font-size: 16px; font-family: var(--font-system); color: var(--c-od-fg); background: var(--c-od-bg);}
+
+h1, h2, h3, h4, h5, h6 {color: var(--c-od-fg);}
+
+/* Bootstrap reads these variables — keeps our tokens winning after Bootstrap is imported */
+:root {
+    --bs-heading-color: var(--c-od-fg);
+    --bs-card-title-color: var(--c-od-fg);
+    --bs-body-color: var(--c-od-fg);
+    --bs-body-bg: var(--c-od-bg);
+}
+
+a {color: var(--c-od-accent);}
+a:hover {color: var(--c-od-accent-hi);}

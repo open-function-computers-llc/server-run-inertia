@@ -1,37 +1,32 @@
 <template>
 <Head :title="'Manage ' + account.name" />
-<div>
-    <div class="d-flex justify-content-between">
-        <div>
-            <Link href="/dashboard">Back to all accounts</Link>
-
-            <div class="d-flex align-items-center">
+<div class="account-show">
+    <div class="account-toolbar">
+        <div class="toolbar-left">
+            <Link href="/dashboard" class="back-link">← Back to accounts</Link>
+            <div class="account-heading">
                 <LockUnlock :account="account" />
-
-                <button @click="runClone = true" class="btn btn-info ms-2 h-100 d-flex align-items-center">
-                    <Clone /><span class="ms-2"> Clone Account</span>
+                <button @click="runClone = true" class="btn-ghost">
+                    <Clone /> Clone Account
                 </button>
             </div>
         </div>
-
-        <Uptime :account="account" />
+        <div class="toolbar-right">
+            <Uptime :account="account" />
+        </div>
     </div>
+
+    <div class="created-at">Created: {{ account.createdAt }}</div>
 
     <div>
-        <span>Created: {{ account.createdAt }}</span>
-    </div>
+        <SubNav :sshPubKey="account.sshPubKey" :activeTab="activeTab" @update-tab="activeTab = $event" />
 
-    <div class="account-actions">
-        <h2>Account Actions</h2>
-    </div>
-
-    <SubNav :sshPubKey="account.sshPubKey" :activeTab="activeTab" @update-tab="activeTab = $event" />
-    <div class="p-4">
-        <component :is="tabComponents[activeTab]" :account="account" />
+        <div class="tab-panel">
+            <component :is="tabComponents[activeTab]" :account="account" />
+        </div>
     </div>
 
     <ScriptRunner v-if="runClone" script="cloneAccount" :args="{ ACCOUNT_NAME: account.name }" @done="() => { runClone = false; }" />
-
 </div>
 </template>
 
@@ -74,10 +69,69 @@ const tabComponents = {
 </script>
 
 <style scoped lang="scss">
-.nav-tabs {
-    .nav-link:not(.active) {
-        color: black;
-        background-color: rgb(222, 226, 230);
+@import "../../scss/variables.scss";
+
+.account-show {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.account-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.toolbar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.back-link {
+    font-size: 13px;
+    color: $c-od-muted;
+    text-decoration: none;
+
+    &:hover { color: $c-od-fg; }
+}
+
+.account-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid $c-od-border;
+    color: $c-od-muted;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+        background: $c-od-surface-hi;
+        color: $c-od-fg;
     }
+}
+
+.created-at {
+    font-size: 13px;
+    color: $c-od-muted;
+}
+
+.tab-panel {
+    background: $c-od-surface;
+    border: 1px solid $c-od-border;
+    border-radius: 0 14px 14px 14px;
+    padding: 24px;
 }
 </style>

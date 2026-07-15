@@ -1,14 +1,13 @@
 <template>
-<div class="form-check">
+<div class="checkbox-field">
     <input
         type="checkbox"
         :name="name"
         :value="value"
         v-model="proxyChecked"
-        class="form-check-input"
         @change="changedCheckbox"
         :id="uniqueID" />
-    <label class="form-check-label" :class="{ active: proxyChecked }" :for="uniqueID" v-html="label" />
+    <label :class="{ active: proxyChecked }" :for="uniqueID" v-html="label" />
 </div>
 </template>
 
@@ -36,7 +35,6 @@ const props = defineProps({
 });
 
 const uniqueID = ref("");
-// thanks https://attacomsian.com/blog/javascript-generate-random-string
 let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 for (let i = 0; i < 32; i++) {
     uniqueID.value += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -46,7 +44,36 @@ const proxyChecked = ref(false);
 proxyChecked.value = props.checked;
 
 const changedCheckbox = () => {
-    // proxyChecked.value = !proxyChecked.value;
     emit("update:checked", proxyChecked.value);
 };
 </script>
+
+<style lang="scss" scoped>
+@import "../scss/variables.scss";
+
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: $c-od-accent;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+label {
+    font-size: 14px;
+    color: $c-od-muted;
+    cursor: pointer;
+
+    &.active {
+        color: $c-od-fg;
+    }
+}
+</style>

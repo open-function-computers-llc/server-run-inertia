@@ -1,328 +1,196 @@
 <template>
-<h2 class="text-xl font-bold mb-4">Analytics</h2>
-<SelectInput width="auto" label="Chart Type" v-model="chartType" :options="[
-  { label: 'Bandwidth', val: 'bandwidth' },
-  { label: 'Total Requests', val: 'total-requests' },
-  { label: 'Unique Visitors', val: 'unique-visitors' },
-]"
-    option-text="label"
-    option-value="val" />
+<div class="analytics">
+    <h2 class="section-title">Analytics</h2>
+    <SelectInput width="auto" label="Chart Type" v-model="chartType" :options="[
+        { label: 'Bandwidth', val: 'bandwidth' },
+        { label: 'Total Requests', val: 'total-requests' },
+        { label: 'Unique Visitors', val: 'unique-visitors' },
+    ]"
+        option-text="label"
+        option-value="val" />
 
-<Spinner v-if="isLoading" />
+    <Spinner v-if="isLoading" />
 
-<div v-else-if="error" class="text-red-600">
-  {{ error }}
-</div>
+    <div v-else-if="error" class="error-msg">{{ error }}</div>
 
-<div v-else-if="!chartData || !chartData.datasets || chartData.datasets.length === 0">
-  <p class="text-gray-500">No analytics data available.</p>
-</div>
+    <div v-else-if="!chartData || !chartData.datasets || chartData.datasets.length === 0" class="empty-msg">
+        No analytics data available.
+    </div>
 
-<div v-else class="chart-container">
-  <component :is="currentChartComponent" :data="chartData" :options="currentChartOptions" />
+    <div v-else class="chart-container">
+        <component :is="currentChartComponent" :data="chartData" :options="currentChartOptions" />
+    </div>
 </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useTheme } from '../../composables/useTheme.js'
 import axios from 'axios'
 import { Bar, Line } from 'vue-chartjs'
 import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  LineElement,
-  CategoryScale,
-  LinearScale,
-  PointElement
+    Chart as ChartJS,
+    Title,
+    Tooltip,
+    Legend,
+    BarElement,
+    LineElement,
+    CategoryScale,
+    LinearScale,
+    PointElement
 } from 'chart.js'
 import Spinner from '../Spinner.vue';
 import SelectInput from '../SelectInput.vue';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, LineElement, CategoryScale, LinearScale, PointElement)
 
+const { theme } = useTheme()
+
+// Chart.js takes JS color values — compute them from the active theme
+const C_MUTED  = computed(() => theme.value === 'dark' ? '#8892a4' : '#64748b')
+const C_BORDER = computed(() => theme.value === 'dark' ? '#404558' : '#e2e8f0')
+const C_FG     = computed(() => theme.value === 'dark' ? '#f5f5f8' : '#1e293b')
+const C_ACCENT = '#7c6cf7'
+const C_GREEN  = '#4ade80'
+const C_AMBER  = '#f59e0b'
+
 const props = defineProps({
-  account: {
-    type: Object,
-    default: {}
-  }
+    account: {
+        type: Object,
+        default: {}
+    }
 })
 
 const isLoading = ref(false)
 const error = ref(null)
-const chartData = ref({
-  labels: [],
-  datasets: []
-})
+const chartData = ref({ labels: [], datasets: [] })
 const chartType = ref('')
 
-// Helper function to parse date from "DD/MMM/YYYY" format
 const parseDate = (dateStr) => {
-  const [day, month, year] = dateStr.split('/')
-  const monthMap = {
-    'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-    'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
-  }
-  return new Date(year, monthMap[month], parseInt(day))
+    const [day, month, year] = dateStr.split('/')
+    const monthMap = { 'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5, 'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11 }
+    return new Date(year, monthMap[month], parseInt(day))
 }
 
-// Helper function to format date to "DD/MMM/YYYY"
 const formatDate = (date) => {
-  const day = String(date.getDate()).padStart(2, '0')
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const month = months[date.getMonth()]
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
+    const day = String(date.getDate()).padStart(2, '0')
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return `${day}/${months[date.getMonth()]}/${date.getFullYear()}`
 }
 
-// Helper function to generate date range
 const generateDateLabels = (startDateStr, endDateStr, count) => {
-  const startDate = parseDate(startDateStr)
-  const endDate = parseDate(endDateStr)
-  const labels = []
-
-  for (let i = 0; i < count; i++) {
-    const date = new Date(startDate)
-    date.setDate(startDate.getDate() + i)
-    labels.push(formatDate(date))
-  }
-
-  return labels
+    const startDate = parseDate(startDateStr)
+    const labels = []
+    for (let i = 0; i < count; i++) {
+        const date = new Date(startDate)
+        date.setDate(startDate.getDate() + i)
+        labels.push(formatDate(date))
+    }
+    return labels
 }
 
-// Computed property to determine which chart component to use
-const currentChartComponent = computed(() => {
-  return chartType.value === 'bandwidth' ? Line : Bar
-})
+const currentChartComponent = computed(() => chartType.value === 'bandwidth' ? Line : Bar)
 
-// Computed property for chart-specific options
+const chartTitles = {
+    'bandwidth': { text: 'Bandwidth Usage Over Time', yLabel: 'Bandwidth (MB)' },
+    'total-requests': { text: 'Total Requests', yLabel: 'Requests' },
+    'unique-visitors': { text: 'Unique Visitors', yLabel: 'Visitors' },
+}
+
 const currentChartOptions = computed(() => {
-  const baseOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-        labels: {
-          color: '#333'
+    const muted = C_MUTED.value
+    const border = C_BORDER.value
+    const fg = C_FG.value
+    const meta = chartTitles[chartType.value]
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            title: meta ? { display: true, text: meta.text, color: fg, font: { size: 14 } } : { display: false }
+        },
+        scales: {
+            x: {
+                ticks: { color: muted, maxRotation: 45, minRotation: 45 },
+                grid: { color: border },
+                title: meta ? { display: true, text: 'Date', color: muted } : { display: false }
+            },
+            y: {
+                ticks: {
+                    color: muted,
+                    ...(chartType.value === 'bandwidth' ? { callback: v => v.toLocaleString('en-US') + ' MB' } : {})
+                },
+                grid: { color: border },
+                title: meta ? { display: true, text: meta.yLabel, color: muted } : { display: false },
+                beginAtZero: true
+            }
         }
-      }
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: '#666',
-          maxRotation: 45,
-          minRotation: 45
-        }
-      },
-      y: {
-        ticks: {
-          color: '#666'
-        }
-      }
     }
-  }
-
-  // Customize options based on chart type
-  switch (chartType.value) {
-    case 'bandwidth':
-      return {
-        ...baseOptions,
-        plugins: {
-          ...baseOptions.plugins,
-          title: {
-            display: true,
-            text: 'Bandwidth Usage Over Time',
-            color: '#333',
-            font: {
-              size: 16
-            }
-          }
-        },
-        scales: {
-          ...baseOptions.scales,
-          x: {
-            ...baseOptions.scales.x,
-            title: {
-              display: true,
-              text: 'Date',
-              color: '#666'
-            }
-          },
-          y: {
-            ...baseOptions.scales.y,
-            title: {
-              display: true,
-              text: 'Bandwidth (MB)',
-              color: '#666'
-            },
-            ticks: {
-              ...baseOptions.scales.y.ticks,
-              callback: function (value) {
-                return value.toLocaleString('en-US') + ' MB'
-              }
-            }
-          }
-        }
-      }
-
-    case 'total-requests':
-      return {
-        ...baseOptions,
-        plugins: {
-          ...baseOptions.plugins,
-          title: {
-            display: true,
-            text: 'Total Requests',
-            color: '#333',
-            font: {
-              size: 16
-            }
-          }
-        },
-        scales: {
-          ...baseOptions.scales,
-          x: {
-            ...baseOptions.scales.x,
-            title: {
-              display: true,
-              text: 'Date',
-              color: '#666'
-            }
-          },
-          y: {
-            ...baseOptions.scales.y,
-            title: {
-              display: true,
-              text: 'Requests',
-              color: '#666'
-            },
-            beginAtZero: true
-          }
-        }
-      }
-
-    case 'unique-visitors':
-      return {
-        ...baseOptions,
-        plugins: {
-          ...baseOptions.plugins,
-          title: {
-            display: true,
-            text: 'Unique Visitors',
-            color: '#333',
-            font: {
-              size: 16
-            }
-          }
-        },
-        scales: {
-          ...baseOptions.scales,
-          x: {
-            ...baseOptions.scales.x,
-            title: {
-              display: true,
-              text: 'Date',
-              color: '#666'
-            }
-          },
-          y: {
-            ...baseOptions.scales.y,
-            title: {
-              display: true,
-              text: 'Visitors',
-              color: '#666'
-            },
-            beginAtZero: true
-          }
-        }
-      }
-
-    default:
-      return baseOptions
-  }
 })
 
 watch(chartType, async () => {
-  if (!chartType.value) return;
+    if (!chartType.value) return
+    try {
+        isLoading.value = true
+        error.value = null
+        const res = await axios.get(`/api/accounts/${props.account.name}/analytics`, { params: { type: chartType.value } })
+        if (res.data.error) { error.value = res.data.error; return }
 
-  try {
-    isLoading.value = true;
-    error.value = null;
-    console.log('Fetching analytics for', props.account.name, 'type:', chartType.value)
+        const data = res.data[chartType.value]
+        if (!data || !data.values || data.values.length === 0) {
+            error.value = 'No analytics data available.'
+            chartData.value = { labels: [], datasets: [] }
+            return
+        }
 
-    const res = await axios.get(`/api/accounts/${props.account.name}/analytics`, {
-      params: { type: chartType.value },
-    })
+        const colors = {
+            'bandwidth':       { border: C_ACCENT, bg: C_ACCENT + '33' },
+            'total-requests':  { border: C_GREEN,  bg: C_GREEN  + '99' },
+            'unique-visitors': { border: C_AMBER,  bg: C_AMBER  + '99' },
+        }
+        const c = colors[chartType.value] ?? colors['bandwidth']
 
-    console.log('Analytics response:', res.data)
-
-    if (res.data.error) {
-      error.value = res.data.error
-      return
+        chartData.value = {
+            labels: generateDateLabels(data.start, data.end, data.values.length),
+            datasets: [{ label: chartType.value, data: data.values, borderColor: c.border, backgroundColor: c.bg }]
+        }
+    } catch (err) {
+        error.value = err.response?.data?.error || err.response?.data?.message || 'Failed to load analytics data.'
+        chartData.value = { labels: [], datasets: [] }
+    } finally {
+        isLoading.value = false
     }
-
-    const data = res.data[chartType.value]
-
-    if (!data || !data.values || data.values.length === 0) {
-      error.value = 'No analytics data available.'
-      chartData.value = { labels: [], datasets: [] }
-      return
-    }
-
-    // Generate date labels from start to end
-    const dateLabels = generateDateLabels(data.start, data.end, data.values.length)
-
-    // Customize colors based on chart type
-    let borderColor, backgroundColor
-    switch (chartType.value) {
-      case 'bandwidth':
-        borderColor = '#4F46E5'  // Indigo
-        backgroundColor = 'rgba(79, 70, 229, 0.2)'
-        break
-      case 'total-requests':
-        borderColor = '#10B981'  // Green
-        backgroundColor = 'rgba(16, 185, 129, 0.6)'
-        break
-      case 'unique-visitors':
-        borderColor = '#F59E0B'  // Amber
-        backgroundColor = 'rgba(245, 158, 11, 0.6)'
-        break
-      default:
-        borderColor = '#4F46E5'
-        backgroundColor = 'rgba(79, 70, 229, 0.2)'
-    }
-
-    chartData.value = {
-      labels: dateLabels,  // Use date labels instead of numeric indices
-      datasets: [
-        {
-          label: chartType.value,
-          data: data.values,
-          borderColor: borderColor,
-          backgroundColor: backgroundColor,
-          // tension: chartType.value === 'bandwidth' ? 0.4 : 0,  // Smooth line for bandwidth only
-        },
-      ],
-    }
-  } catch (err) {
-    console.error('Failed to load analytics', err)
-    console.error('Error details:', err.response)
-    error.value = err.response?.data?.error || err.response?.data?.message || 'Failed to load analytics data.'
-    chartData.value = { labels: [], datasets: [] }
-  } finally {
-    isLoading.value = false
-  }
 })
 
-chartType.value = 'bandwidth';
+chartType.value = 'bandwidth'
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "../../scss/variables.scss";
+
+.analytics {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
 .chart-container {
-  height: 600px;
+    height: 500px;
+}
+
+.error-msg {
+    font-size: 14px;
+    color: $c-od-danger;
+}
+
+.empty-msg {
+    font-size: 14px;
+    color: $c-od-muted;
 }
 </style>

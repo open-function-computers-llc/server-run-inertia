@@ -1,7 +1,8 @@
 <template>
-<div v-if="!confirmedCreate">
-    <h2>Create Account:</h2>
-    <div class="row">
+<div class="create-account">
+    <div v-if="!confirmedCreate" class="card">
+        <h2 class="card-title">Create Account</h2>
+
         <TextInput
             label="New Account Name"
             v-model="newAccountName"
@@ -19,17 +20,17 @@
             label="Install RAD Framework"
             v-model:checked="isRAD" />
 
-        <div class="d-flex gap-2">
-            <Link class="btn btn-danger" href="/accounts">Cancel</Link>
-            <button class="btn btn-success" @click="confirmedCreate = true">Create</button>
+        <div class="actions">
+            <Link class="btn-ghost" href="/dashboard">Cancel</Link>
+            <button class="btn-primary" @click="confirmedCreate = true">Create</button>
         </div>
     </div>
-</div>
 
-<ScriptRunner v-else
-    script="addAccount"
-    :envvars="{ ACCOUNT_NAME: newAccountName, INSTALL_WP: isWordpress ? 'true' : 'false', INSTALL_RAD: isRAD ? 'true' : 'false' }"
-    :completeHref="'/account/' + newAccountName" />
+    <ScriptRunner v-else
+        script="addAccount"
+        :envvars="{ ACCOUNT_NAME: newAccountName, INSTALL_WP: isWordpress ? 'true' : 'false', INSTALL_RAD: isRAD ? 'true' : 'false' }"
+        :completeHref="'/account/' + newAccountName" />
+</div>
 </template>
 
 <script setup>
@@ -51,3 +52,63 @@ watch(newAccountName, () => {
     newAccountName.value = newAccountName.value.replace(/[\W_]+/g, "-").replace(" ", "-");
 });
 </script>
+
+<style lang="scss" scoped>
+@import "../../scss/variables.scss";
+
+.card {
+    background: $c-od-surface;
+    border: 1px solid $c-od-border;
+    border-radius: 14px;
+    padding: 32px;
+    max-width: 480px;
+}
+
+.card-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.btn-primary {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, $c-od-accent, $c-od-accent-sub);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.15s;
+
+    &:hover { opacity: 0.92; }
+}
+
+.btn-ghost {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid $c-od-border;
+    color: $c-od-muted;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+        background: $c-od-surface-hi;
+        color: $c-od-fg;
+    }
+}
+</style>

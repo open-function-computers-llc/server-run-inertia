@@ -1,6 +1,10 @@
 // base scss files get imported here, scss can also be defined in the vue templates
 @import "reset.scss";
 @import "variables.scss";
-@import "account.scss";
 
 @import "node_modules/bootstrap/scss/bootstrap";
+
+/* Override Bootstrap class rules that ignore our CSS custom properties */
+h1, h2, h3, h4, h5, h6,
+.card-title,
+.card-text { color: var(--c-od-fg); }
