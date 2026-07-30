@@ -11,6 +11,7 @@ import (
 
 type Account struct {
 	IsLocked                  bool       `json:"isLocked"`
+	IsLockedDownDisabled      bool       `json:"isLockedDownDisabled"`
 	Name                      string     `json:"name"`
 	UptimeURL                 string     `json:"uptimeURL"`
 	Username                  string     `json:"username"`
@@ -124,6 +125,11 @@ func (a *Account) Lock() error {
 
 func (a *Account) Unlock() error {
 	a.IsLocked = false
+	return a.writeSettingsFile()
+}
+
+func (a *Account) SetLockedDownDisabled(enabled bool) error {
+	a.IsLockedDownDisabled = enabled
 	return a.writeSettingsFile()
 }
 
