@@ -34,18 +34,18 @@ func (s *server) bindRoutes() {
 
 	protectedRoutes := map[string]http.HandlerFunc{
 		// inertia pages
-		"GET /dashboard":                              s.handleDashboard(),
-		"GET /create-account":                         s.handlePage("Account/Create"),
-		"GET /account/{account}":                      s.handleAccountDetails(""),
-		"GET /importable-accounts":                    s.handleListImportableAccounts(),
-		"GET /logout":                                 s.handleLogout(),
-		"GET /settings":                               s.handleSettings(),
-		"GET /vcs":                                    s.handleVcs(),
-		"POST /accounts/{account}/domains":            s.handleAddDomain(),
-		"PUT /accounts/{account}/domains/primary":     s.handleSetPrimaryDomain(),
-		"DELETE /accounts/{account}/domains/{domain}": s.handleDeleteDomain(),
-		"PATCH /accounts/{account}/uptime-url":             s.handleFormSetUptimeURL(),
-		"PATCH /accounts/{account}/locked-down-disabled":   s.handleFormSetLockedDownDisabled(),
+		"GET /dashboard":                                 s.handleDashboard(),
+		"GET /create-account":                            s.handlePage("Account/Create"),
+		"GET /account/{account}":                         s.handleAccountDetails(""),
+		"GET /importable-accounts":                       s.handleListImportableAccounts(),
+		"GET /logout":                                    s.handleLogout(),
+		"GET /settings":                                  s.handleSettings(),
+		"GET /vcs":                                       s.handleVcs(),
+		"POST /accounts/{account}/domains":               s.handleAddDomain(),
+		"PUT /accounts/{account}/domains/primary":        s.handleSetPrimaryDomain(),
+		"DELETE /accounts/{account}/domains/{domain}":    s.handleDeleteDomain(),
+		"PATCH /accounts/{account}/uptime-url":           s.handleFormSetUptimeURL(),
+		"PATCH /accounts/{account}/locked-down-disabled": s.handleFormSetLockedDownDisabled(),
 
 		// raw JSON routes
 		"GET /api/accounts/{account}/analytics": s.handleAccountAnalytics(),
