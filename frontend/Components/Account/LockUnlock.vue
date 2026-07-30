@@ -2,17 +2,22 @@
 
     <h1 class="me-2 d-flex align-items-center">
         <UnLock v-if="isLocked" />
-        <Lock v-if="!isLocked" />
+        <Lock v-if="!isLocked && !isLockedDownDisabled" />
         <span> {{ account.name }}
             <span v-if="isLocked">(locked)</span>
-            <span v-if="!isLocked">(unlocked)</span>
+            <span v-if="!isLocked && !isLockedDownDisabled">(unlocked)</span>
         </span>
+        <span v-if="isLockedDownDisabled" class="badge bg-warning text-dark ms-2">Lock-down disabled</span>
     </h1>
 
     <template v-if="isLocked">
         <button @click="runUnlock = true" class="btn btn-warning h-100 d-flex align-items-center" :disabled="runUnlock">
             <UnLock /><span class="ms-2"> Unlock</span>
         </button>
+    </template>
+
+    <template v-else-if="isLockedDownDisabled">
+        <span class="text-muted ms-2">(lock-down is disabled for this account)</span>
     </template>
 
     <template v-else>
@@ -44,6 +49,7 @@ const props = defineProps({
     }
 });
 const isLocked = ref(props.account.isLocked);
+const isLockedDownDisabled = ref(props.account.isLockedDownDisabled);
 const runLock = ref(false);
 const runUnlock = ref(false);
 </script>
