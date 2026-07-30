@@ -44,7 +44,8 @@ func (s *server) bindRoutes() {
 		"POST /accounts/{account}/domains":            s.handleAddDomain(),
 		"PUT /accounts/{account}/domains/primary":     s.handleSetPrimaryDomain(),
 		"DELETE /accounts/{account}/domains/{domain}": s.handleDeleteDomain(),
-		"PATCH /accounts/{account}/uptime-url":        s.handleFormSetUptimeURL(),
+		"PATCH /accounts/{account}/uptime-url":             s.handleFormSetUptimeURL(),
+		"PATCH /accounts/{account}/locked-down-disabled":   s.handleFormSetLockedDownDisabled(),
 
 		// raw JSON routes
 		"GET /api/accounts/{account}/analytics": s.handleAccountAnalytics(),
