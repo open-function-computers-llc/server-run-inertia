@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+
+	"github.com/open-function-computers-llc/server-run-inertia/account"
 )
 
 func StreamScriptOutput(scriptName string, args, env map[string]string, communicationChannel *chan string) {
@@ -41,6 +43,19 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 		for _, a := range args {
 			argValues = append(argValues, a)
 		}
+
+		// Guard the lock script - don't run if locked-down is disabled for this account
+		if scriptName == "lock" {
+			accountName := args["ACCOUNT_NAME"]
+			if accountName != "" {
+				a, err := account.Find(accountName)
+				if err == nil && a.IsLockedDownDisabled {
+					*communicationChannel <- "Lock-down is disabled for this account (isLockedDownDisabled is set). The lock script will not run."
+					return
+				}
+			}
+		}
+
 		cmd = exec.Command(scriptsRoot+argumentScripts[scriptName], argValues...)
 	}
 
