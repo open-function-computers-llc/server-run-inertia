@@ -33,7 +33,7 @@
 
         <Modal v-if="isUpdating">
             <ScriptRunner
-                script="update-uptime-uri"
+                script="update-uptime-url"
                 :envvars="{ ACCOUNT: account.name, UPTIME_URI: newUptimeURI }"
                 @done="onDone" />
         </Modal>
