@@ -39,6 +39,21 @@
         </Modal>
     </div>
 
+    <div class="locked-down-disabled-settings mb-4">
+        <div class="d-flex align-items-center mb-2">
+            <input
+                type="checkbox"
+                :checked="lockedDownDisabled"
+                @change="onToggleLockedDownDisabled"
+                class="form-check-input me-2" />
+            <label class="mb-0">Disable lock-down for this account</label>
+        </div>
+        <p class="text-muted small mb-0">
+            This prevents the lock script from running on poorly-built WordPress sites that may break under hardened file permissions.
+            <span v-if="lockedDownDisabled" class="text-warning">This account will not be locked down.</span>
+        </p>
+    </div>
+
     <div class="account-termination">
         <div class="d-flex align-items-center mb-3">
             <p class="mb-0 me-2">Terminate account</p>
@@ -87,6 +102,7 @@ const isUpdating = ref(false)
 const showTerminateForm = ref(false)
 const isTerminating = ref(false)
 const error = ref('')
+const lockedDownDisabled = ref(props.account.isLockedDownDisabled || false)
 
 function cancelUptime() {
     showUptimeForm.value = false
@@ -122,5 +138,17 @@ function onDone() {
 function onTerminate() {
     isTerminating.value = false
     router.visit('/dashboard')
+}
+
+function onToggleLockedDownDisabled() {
+    lockedDownDisabled.value = !lockedDownDisabled.value
+    router.patch(
+        `/accounts/${props.account.name}/locked-down-disabled`,
+        { lockedDownDisabled: lockedDownDisabled.value },
+        {
+            preserveScroll: true,
+            preserveState: true,
+        }
+    )
 }
 </script>
