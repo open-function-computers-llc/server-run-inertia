@@ -23,6 +23,11 @@ var updateableProperties = []updateableProperty{
 		callback: setLockedDownDisabled,
 	},
 	{
+		name:     "set-uptime-url",
+		usage:    "Update the uptime monitoring URL for this account",
+		callback: setUptimeURL,
+	},
+	{
 		name:     "set-domain",
 		usage:    "Update the main domain for the selected account",
 		callback: setPrimaryDomain,
@@ -127,6 +132,11 @@ func setLockedDownDisabled(cCtx *cli.Context) error {
 		return nil
 	}
 	return &ErrorInvalidArguments{}
+}
+
+func setUptimeURL(cCtx *cli.Context) error {
+	a, _ := account.Find(cCtx.String("account"))
+	return a.SetUptimeURL(cCtx.String("set-uptime-url"))
 }
 
 func setPrimaryDomain(cCtx *cli.Context) error {
