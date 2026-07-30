@@ -18,6 +18,11 @@ var updateableProperties = []updateableProperty{
 		callback: setLock,
 	},
 	{
+		name:     "lockdown-disabled",
+		usage:    "Set locked-down disabled status for this account (true|false)",
+		callback: setLockedDownDisabled,
+	},
+	{
 		name:     "set-domain",
 		usage:    "Update the main domain for the selected account",
 		callback: setPrimaryDomain,
@@ -106,6 +111,19 @@ func setLock(cCtx *cli.Context) error {
 	}
 	if cCtx.String("locked") == "false" {
 		a.Unlock()
+		return nil
+	}
+	return &ErrorInvalidArguments{}
+}
+
+func setLockedDownDisabled(cCtx *cli.Context) error {
+	a, _ := account.Find(cCtx.String("account"))
+	if cCtx.String("lockdown-disabled") == "true" {
+		a.SetLockedDownDisabled(true)
+		return nil
+	}
+	if cCtx.String("lockdown-disabled") == "false" {
+		a.SetLockedDownDisabled(false)
 		return nil
 	}
 	return &ErrorInvalidArguments{}
