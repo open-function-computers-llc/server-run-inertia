@@ -108,6 +108,18 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, defaultLogo []byte, l *
 			conn.Write([]byte("OK: " + string(output) + "\n"))
 		}
 	case "LOCK":
+		// Check if lock-down is disabled for this account
+		hostingAccount, err := account.Find(msg.Account)
+		if err != nil {
+			conn.Write([]byte("ERROR: " + err.Error() + "\n"))
+			return
+		}
+
+		if hostingAccount.IsLockedDownDisabled {
+			conn.Write([]byte("OK: Lock-down is disabled for this account. The lock script will not run.\n"))
+			return
+		}
+
 		l.Info("trying to lock!")
 		l.Info("running command " + scriptsRoot + "ofco-lock-site-production.sh " + msg.Account)
 		cmd = exec.Command(scriptsRoot+"ofco-lock-site-production.sh", msg.Account)
