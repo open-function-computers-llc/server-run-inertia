@@ -1,12 +1,5 @@
 <template>
 <main>
-    <!-- Top-right status overlay -->
-    <div class="status-bar">
-        <span class="status-dot"></span>
-        <span>All systems operational</span>
-        <span class="sep">|</span>
-        <span>3 servers</span>
-    </div>
 
     <!-- ═══ Top bar: branding ═══ -->
     <div class="topbar">
@@ -62,27 +55,41 @@
                                 <span class="sub">last checked 32s ago</span>
                             </div>
                         </div>
-                        <div class="telemetry-bar">
-                            <span style="height: 40%"></span>
-                            <span style="height: 65%"></span>
-                            <span style="height: 50%"></span>
-                            <span style="height: 80%"></span>
-                            <span style="height: 60%"></span>
-                            <span style="height: 90%"></span>
-                            <span style="height: 70%"></span>
-                            <span style="height: 85%"></span>
-                            <span style="height: 55%"></span>
-                            <span style="height: 75%"></span>
-                            <span style="height: 95%"></span>
-                            <span style="height: 70%"></span>
-                            <span style="height: 80%"></span>
-                            <span style="height: 60%"></span>
-                            <span style="height: 88%"></span>
-                            <span style="height: 72%"></span>
-                            <span style="height: 92%"></span>
-                            <span style="height: 68%"></span>
-                            <span style="height: 78%"></span>
-                            <span style="height: 82%"></span>
+                        <div class="telemetry-chart" data-od-id="bandwidth-chart" role="img" aria-label="Bandwidth for the last 12 days, in megabytes">
+                            <div class="telemetry-chart-head">
+                                <span class="telemetry-chart-title">Bandwidth</span>
+                                <span class="telemetry-chart-sub">last 12 days</span>
+                            </div>
+                            <div class="chart-y">
+                                <span v-for="tick in reportChartYTicks" :key="tick">{{ tick }}</span>
+                            </div>
+                            <div class="chart-body">
+                                <div class="chart-grid" aria-hidden="true">
+                                    <span></span><span></span><span></span><span></span><span></span>
+                                </div>
+                                <svg class="chart-line" :viewBox="`0 0 ${CHART_W} ${CHART_H}`" preserveAspectRatio="none" aria-hidden="true">
+                                    <path :d="reportChartArea" class="chart-area"></path>
+                                    <path :d="reportChartLine" class="chart-stroke"></path>
+                                    <circle
+                                        v-for="(point, i) in reportChart"
+                                        :key="i"
+                                        class="chart-point"
+                                        :cx="reportChartPoint(i).x"
+                                        :cy="reportChartPoint(i).y"
+                                        r="3">
+                                        <title>{{ point.label + ' — ' + point.value.toLocaleString('en-US') + ' MB' }}</title>
+                                    </circle>
+                                </svg>
+                            </div>
+                            <div class="chart-xlabels" aria-hidden="true">
+                                <span
+                                    v-for="(point, i) in reportChart"
+                                    :key="i"
+                                    class="chart-xlabel-anchor"
+                                    :style="{ left: reportChartPointPct(i) + '%' }">
+                                    <span class="chart-xlabel">{{ point.label }}</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -110,6 +117,48 @@ import { useTheme } from '../composables/useTheme.js';
 
 const page = usePage();
 const { theme, toggle: toggleTheme } = useTheme();
+
+// Sample report data shown on the homepage (static — real numbers live behind sign-in).
+// One point per generated report, mirroring the /api/accounts/{name}/analytics bandwidth series.
+const reportChart = [
+    { label: '08/05/2026', value: 38210 },
+    { label: '08/06/2026', value: 41780 },
+    { label: '08/07/2026', value: 35940 },
+    { label: '08/08/2026', value: 47620 },
+    { label: '08/09/2026', value: 52310 },
+    { label: '08/10/2026', value: 58460 },
+    { label: '08/11/2026', value: 54890 },
+    { label: '08/12/2026', value: 61240 },
+    { label: '08/13/2026', value: 59030 },
+    { label: '08/14/2026', value: 63470 },
+    { label: '08/15/2026', value: 66820 },
+    { label: '08/16/2026', value: 64150 },
+];
+
+// Round the series max up to a clean axis ceiling (matches Chart.js beginAtZero + nice ticks)
+const reportChartMax = Math.ceil(Math.max(...reportChart.map((p) => p.value)) / 10000) * 10000;
+const reportChartYTicks = [4, 3, 2, 1, 0].map((i) => Math.round((reportChartMax * i) / 4).toLocaleString('en-US'));
+
+// Chart geometry (SVG viewBox: 600 × 130 — the plot area only; x-axis date
+// labels render as HTML below the chart so their font size stays fixed
+// instead of scaling with the svg's rendered width)
+const CHART_W = 600;
+const CHART_H = 130;
+
+const reportChartPoint = (i) => {
+    const x = (i / (reportChart.length - 1)) * CHART_W;
+    const y = CHART_H - (reportChart[i].value / reportChartMax) * CHART_H;
+    return { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
+};
+
+// Same x position as reportChartPoint, expressed as a % for the HTML label row
+const reportChartPointPct = (i) => Math.round((i / (reportChart.length - 1)) * 10000) / 100;
+
+const reportChartLine = reportChart
+    .map((_, i) => `${i === 0 ? 'M' : 'L'}${reportChartPoint(i).x},${reportChartPoint(i).y}`)
+    .join(' ');
+
+const reportChartArea = `${reportChartLine} L${CHART_W},${CHART_H} L0,${CHART_H} Z`;
 </script>
 
 <style lang="scss" scoped>
@@ -294,30 +343,6 @@ main,
     color: $c-od-muted;
 }
 
-.telemetry-bar {
-    display: flex;
-    gap: 2px;
-    align-items: flex-end;
-    height: 32px;
-    margin-top: 8px;
-}
-
-.telemetry-bar span {
-    flex: 1;
-    background: $c-od-accent;
-    border-radius: 2px;
-    opacity: 0.5;
-    min-height: 3px;
-}
-
-.telemetry-bar span:nth-child(odd) {
-    opacity: 0.7;
-}
-
-.telemetry-bar span:nth-child(3n) {
-    opacity: 0.9;
-}
-
 .brand-footer {
     font-size: 13px;
     color: $c-od-muted;
@@ -398,35 +423,129 @@ main,
     transform: scale(0.985);
 }
 
-/* ── Status bar (top-right overlay) ─────────────────────── */
-.status-bar {
-    position: fixed;
-    top: 20px;
-    right: 20px;
+/* ── Bandwidth chart (design element inside System Overview) ── */
+.telemetry-chart {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid $c-od-border;
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    grid-template-rows: auto 1fr auto;
+    gap: 8px 8px;
+}
+
+.telemetry-chart-head {
+    grid-column: 1 / -1;
     display: flex;
-    gap: 14px;
-    align-items: center;
-    background: $c-od-surface;
-    border: 1px solid $c-od-border;
-    border-radius: 999px;
-    padding: 8px 18px;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.telemetry-chart-title {
     font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: $c-od-fg;
+}
+
+.telemetry-chart-sub {
+    font-size: 11px;
     color: $c-od-muted;
-    z-index: 100;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    font-variant-numeric: tabular-nums;
 }
 
-.status-bar .status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: $c-od-success;
-    box-shadow: 0 0 6px $c-od-success;
+.chart-y {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    font-size: 10px;
+    color: $c-od-muted;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
 }
 
-.status-bar .sep {
-    opacity: 0.3;
+.chart-y span {
+    line-height: 1;
+}
+
+.chart-body {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 600 / 130;
+}
+
+.chart-grid {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.chart-grid span {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: $c-od-border;
+    opacity: 0.6;
+}
+
+.chart-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* The first/last points sit exactly on the viewBox edges; let their
+       radius draw past it instead of being clipped */
+    overflow: visible;
+}
+
+.chart-xlabels {
+    grid-column: 2;
+    position: relative;
+    height: 42px;
+    margin-top: 6px;
+}
+
+.chart-xlabel-anchor {
+    position: absolute;
+    top: 0;
+    width: 0;
+}
+
+.chart-area {
+    fill: $c-od-accent;
+    opacity: 0.2;
+}
+
+.chart-stroke {
+    fill: none;
+    stroke: $c-od-accent;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+.chart-point {
+    fill: $c-od-bg;
+    stroke: $c-od-accent;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+.chart-xlabel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: block;
+    white-space: nowrap;
+    font-size: 10px;
+    color: $c-od-muted;
+    font-variant-numeric: tabular-nums;
+    transform-origin: 100% 0;
+    transform: rotate(-45deg);
 }
 
 /* ── Hero / intro section ───────────────────────────────── */
@@ -529,16 +648,24 @@ main,
         font-size: 24px;
     }
 
-    .status-bar {
-        display: none;
-    }
-
     .telemetry {
         display: none;
     }
 
     .feature-pills {
         display: none;
+    }
+
+    .telemetry-chart {
+        grid-template-columns: 44px 1fr;
+    }
+
+    .chart-y {
+        font-size: 9px;
+    }
+
+    .chart-xlabel {
+        font-size: 9px;
     }
 }
 
