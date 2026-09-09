@@ -14,16 +14,16 @@ $transition-time: 1s;
 // bootstrap overrides
 $grid-gutter-width: 30px;
 
-// New Open Design colors
-$c-od-bg:        oklch(18% 0.015 275);
-$c-od-surface:   oklch(24% 0.018 275);
-$c-od-surface-hi: oklch(30% 0.02 275);
-$c-od-fg:        oklch(97% 0.003 275);
-$c-od-muted:     oklch(58% 0.02 275);
-$c-od-border:    oklch(32% 0.018 275);
-$c-od-accent:    oklch(65% 0.18 295);
-$c-od-accent-hi: oklch(72% 0.20 295);
-$c-od-accent-sub: oklch(55% 0.14 295);
-$c-od-danger:    oklch(60% 0.18 20);
-$c-od-success:   oklch(70% 0.14 145);
-$c-od-warn:      oklch(72% 0.14 75);
+// New Open Design colors — reference CSS custom properties so themes can switch at runtime
+$c-od-bg:         var(--c-od-bg);
+$c-od-surface:    var(--c-od-surface);
+$c-od-surface-hi: var(--c-od-surface-hi);
+$c-od-fg:         var(--c-od-fg);
+$c-od-muted:      var(--c-od-muted);
+$c-od-border:     var(--c-od-border);
+$c-od-accent:     var(--c-od-accent);
+$c-od-accent-hi:  var(--c-od-accent-hi);
+$c-od-accent-sub: var(--c-od-accent-sub);
+$c-od-danger:     var(--c-od-danger);
+$c-od-success:    var(--c-od-success);
+$c-od-warn:       var(--c-od-warn);

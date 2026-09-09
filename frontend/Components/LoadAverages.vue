@@ -1,9 +1,9 @@
 <template>
-    <aside>
-        <div>{{ oneMinute }}</div>
-        <div>{{ fiveMinutes }}</div>
-        <div>{{ fifteenMinutes }}</div>
-    </aside>
+<aside>
+    <div>{{ oneMinute }}</div>
+    <div>{{ fiveMinutes }}</div>
+    <div>{{ fifteenMinutes }}</div>
+</aside>
 </template>
 
 <script setup>
@@ -29,7 +29,9 @@ socket.addEventListener('message', (e) => {
 aside {
     display: flex;
     gap: 0.5rem;
-    color: $c-backgroundLight;
+    color: $c-od-muted;
+    font-size: 13px;
     align-items: center;
+    font-variant-numeric: tabular-nums;
 }
 </style>

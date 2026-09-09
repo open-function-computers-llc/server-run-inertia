@@ -29,24 +29,33 @@ setTimeout(() => {
 }, 5 * 1000);
 </script>
 
-<style lang="css" scoped>
+<style lang="scss" scoped>
+@import "../scss/variables.scss";
+
 .error-flash {
     position: fixed;
     bottom: 1rem;
     right: 1rem;
     width: 300px;
-    background-color: darkred;
-    color: white;
-    padding: 0.5rem;
-    border-radius: 5px;
+    background: $c-od-danger;
+    color: #fff;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid oklch(60% 0.18 20 / 0.5);
+    font-size: 14px;
+    z-index: 500;
 
     button {
         position: absolute;
-        top: 0.1rem;
-        right: 0.1rem;
+        top: 0.4rem;
+        right: 0.4rem;
         background: transparent;
         border: none;
-        color: white;
+        color: #fff;
+        cursor: pointer;
+        opacity: 0.7;
+
+        &:hover { opacity: 1; }
     }
 }
 </style>
