@@ -3,10 +3,12 @@ package server
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/open-function-computers-llc/server-run-inertia/errx"
 )
 
 func (s *server) handleLogo() http.HandlerFunc {
@@ -37,7 +39,7 @@ func useCustomLogo() ([]byte, error) {
 	}
 
 	if info.IsDir() {
-		return nil, errors.New("server-run-logo.png is a directory for some weird reason")
+		return nil, errx.Wrapf("custom logo path is a directory", fmt.Errorf("%s is a directory", filePath), ErrorLogoFileIsADirectory)
 	}
 
 	f, err := os.Open(filePath)

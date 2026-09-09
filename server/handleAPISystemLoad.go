@@ -1,11 +1,13 @@
 package server
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/open-function-computers-llc/server-run-inertia/errx"
 )
 
 func (s *server) handleAPISystemLoad() http.HandlerFunc {
@@ -20,7 +22,7 @@ func (s *server) handleAPISystemLoad() http.HandlerFunc {
 		stdOutString := string(stdout)
 		parts := strings.Split(stdOutString, "load average: ")
 		if len(parts) != 2 {
-			return output, errors.New(SystemLoadOutputParse)
+			return output, errx.Wrapf("error parsing uptime command output", fmt.Errorf("expected `load average: ` in output, got: %q", stdOutString), ErrorSystemLoadOutputParse)
 		}
 
 		loadParts := strings.Split(parts[1], ", ")

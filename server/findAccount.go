@@ -1,9 +1,10 @@
 package server
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/open-function-computers-llc/server-run-inertia/account"
+	"github.com/open-function-computers-llc/server-run-inertia/errx"
 )
 
 func (s *server) findAccount(name string) (*account.Account, error) {
@@ -13,5 +14,5 @@ func (s *server) findAccount(name string) (*account.Account, error) {
 		}
 	}
 
-	return nil, errors.New("couldn't find the account " + name)
+	return nil, errx.Wrapf("account not found", fmt.Errorf("account %q is not registered with this server", name), ErrorAccountNotFound)
 }
