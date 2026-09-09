@@ -1,6 +1,7 @@
 package account
 
 import (
+	"errors"
 	"os"
 	"reflect"
 	"testing"
@@ -125,8 +126,11 @@ func Test_AnInvalidAccountDoesNotHaveAValidPathToTheSettingsFile(t *testing.T) {
 		Name: "",
 	}
 	path, err := a.stateDirectory()
-	if path != "" || err != nil {
+	if path != "" {
 		t.Error("An account with an invalid name shouldn't have a state directory path")
+	}
+	if !errors.Is(err, ErrorInvalidAccountName) {
+		t.Errorf("Expected ErrorInvalidAccountName, got: %v", err)
 	}
 }
 

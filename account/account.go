@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/open-function-computers-llc/server-run-inertia/errx"
 )
 
 type Account struct {
@@ -81,25 +83,28 @@ func (a *Account) refreshStatus() error {
 	// account "home" must exist
 	folderPath, err := a.stateDirectory()
 	if err != nil {
-		return ErrorInvalidAccountName
+		return err
 	}
 
 	settingsFile := folderPath + "/settings.json"
 	_, err = os.Stat(settingsFile)
 	if err != nil {
-		folder, _ := os.Stat(folderPath)
+		folder, err := os.Stat(folderPath)
+		if err != nil {
+			return err
+		}
 		a.CreatedAt = folder.ModTime()
 		a.writeSettingsFile()
 	}
 
 	status, err := os.ReadFile(settingsFile)
 	if err != nil {
-		return ErrorReadingStateFile
+		return errx.Wrapf("reading settings file", err, ErrorReadingStateFile)
 	}
 
 	err = json.Unmarshal(status, a)
 	if err != nil {
-		return ErrorReadingStateFile
+		return errx.Wrapf("parsing settings file", err, ErrorReadingStateFile)
 	}
 
 	return nil

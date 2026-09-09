@@ -1,10 +1,16 @@
 package account
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
-var ErrorInvalidAccountName error
-var ErrorReadingStateFile error
-var ErrorInvalidDomainValue error
+// sentinel errors for use with errors.Is
+var (
+	ErrorInvalidAccountName = errors.New("invalid account name")
+	ErrorReadingStateFile   = errors.New("error reading account state file")
+	ErrorInvalidDomainValue = errors.New("invalid domain value")
+)
 
 type ErrorInvalidParam struct {
 	Param string
