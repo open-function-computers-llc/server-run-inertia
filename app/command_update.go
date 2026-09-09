@@ -105,7 +105,7 @@ func updateAction(cCtx *cli.Context) error {
 		}
 	}
 
-	return &ErrorInvalidArguments{}
+	return ErrorInvalidArguments
 }
 
 func setLock(cCtx *cli.Context) error {
@@ -118,7 +118,7 @@ func setLock(cCtx *cli.Context) error {
 		a.Unlock()
 		return nil
 	}
-	return &ErrorInvalidArguments{}
+	return ErrorInvalidArguments
 }
 
 func setLockedDownDisabled(cCtx *cli.Context) error {
@@ -131,7 +131,7 @@ func setLockedDownDisabled(cCtx *cli.Context) error {
 		a.SetLockedDownDisabled(false)
 		return nil
 	}
-	return &ErrorInvalidArguments{}
+	return ErrorInvalidArguments
 }
 
 func setUptimeURL(cCtx *cli.Context) error {

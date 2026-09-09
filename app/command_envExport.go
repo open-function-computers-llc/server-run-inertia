@@ -1,10 +1,10 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/open-function-computers-llc/server-run-inertia/account"
+	"github.com/open-function-computers-llc/server-run-inertia/errx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -42,10 +42,10 @@ func envExport() *cli.Command {
 						return nil
 					}
 				}
-				return errors.New("Couldn't find database " + cCtx.String("database") + " in account " + account.Name)
+				return errx.Wrapf("database not found in account", fmt.Errorf("database %q not found in account %q", cCtx.String("database"), account.Name), ErrorDatabaseNotFoundInAccount)
 			}
 
-			return errors.New("WARNING: no valid flags set!")
+			return errx.Wrapf("invalid param provided", fmt.Errorf("database is missing"), ErrorInvalidParam)
 		},
 	}
 }

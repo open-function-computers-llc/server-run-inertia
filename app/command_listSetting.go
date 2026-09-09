@@ -1,10 +1,10 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/open-function-computers-llc/server-run-inertia/account"
+	"github.com/open-function-computers-llc/server-run-inertia/errx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -59,7 +59,7 @@ func listSetting() *cli.Command {
 				return nil
 			}
 
-			return errors.New("WARNING: invalid setting requested")
+			return errx.Wrapf("invalid setting requested", fmt.Errorf("setting %q is not one of: databases, alternate-domains, is-locked, domain, primary-domain", s), ErrorInvalidSetting)
 		},
 	}
 }

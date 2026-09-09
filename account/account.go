@@ -202,16 +202,16 @@ func (a *Account) AddDatabase(host, user, pass, name string) error {
 	fmt.Println("host: "+host, "user: "+user, "pass: "+pass, "name: "+name)
 	// verify required params are present
 	if strings.TrimSpace(host) == "" {
-		return &ErrorInvalidParam{Param: "db-host"}
+		return errx.Wrapf("invalid param provided", fmt.Errorf("db-host is missing"), ErrorInvalidParam)
 	}
 	if strings.TrimSpace(user) == "" {
-		return &ErrorInvalidParam{Param: "db-user"}
+		return errx.Wrapf("invalid param provided", fmt.Errorf("db-user is missing"), ErrorInvalidParam)
 	}
 	if strings.TrimSpace(pass) == "" {
-		return &ErrorInvalidParam{Param: "db-password"}
+		return errx.Wrapf("invalid param provided", fmt.Errorf("db-password is missing"), ErrorInvalidParam)
 	}
 	if strings.TrimSpace(name) == "" {
-		return &ErrorInvalidParam{Param: "db-name"}
+		return errx.Wrapf("invalid param provided", fmt.Errorf("db-name is missing"), ErrorInvalidParam)
 	}
 
 	db := Database{
