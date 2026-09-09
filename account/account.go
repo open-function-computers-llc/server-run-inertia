@@ -97,7 +97,12 @@ func (a *Account) refreshStatus() error {
 		return ErrorReadingStateFile
 	}
 
-	return json.Unmarshal(status, a)
+	err = json.Unmarshal(status, a)
+	if err != nil {
+		return ErrorReadingStateFile
+	}
+
+	return nil
 }
 
 func (a *Account) writeSettingsFile() error {
