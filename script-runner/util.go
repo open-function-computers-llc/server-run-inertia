@@ -2,7 +2,10 @@ package scriptrunner
 
 import (
 	"errors"
+	"fmt"
 	"os"
+
+	"github.com/open-function-computers-llc/server-run-inertia/errx"
 )
 
 var ARGSCRIPT string = "args"
@@ -26,23 +29,23 @@ func scriptType(name string) (string, error) {
 		}
 	}
 
-	return "", errors.New(InvalidScript + " called: " + name)
+	return "", errx.Wrapf("invalid script", fmt.Errorf("script %q is not a registered script", name), ErrorInvalidScript)
 }
 
 func VerifyAllScriptsExist() error {
 	for _, v := range argumentScripts {
 		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v); errors.Is(err, os.ErrNotExist) {
-			return errors.New(MissingScript + ": " + v)
+			return errx.Wrapf("missing script", fmt.Errorf("script %q not found in SCRIPTS_ROOT", v), ErrorMissingScript)
 		}
 	}
 	for _, v := range plainScripts {
 		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v); errors.Is(err, os.ErrNotExist) {
-			return errors.New(MissingScript + ": " + v)
+			return errx.Wrapf("missing script", fmt.Errorf("script %q not found in SCRIPTS_ROOT", v), ErrorMissingScript)
 		}
 	}
 	for _, v := range envScripts {
 		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v.filename); errors.Is(err, os.ErrNotExist) {
-			return errors.New(MissingScript + ": " + v.filename)
+			return errx.Wrapf("missing script", fmt.Errorf("script %q not found in SCRIPTS_ROOT", v.filename), ErrorMissingScript)
 		}
 	}
 	return nil

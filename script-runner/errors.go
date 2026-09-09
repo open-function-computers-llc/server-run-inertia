@@ -1,4 +1,8 @@
 package scriptrunner
 
-var MissingScript string = "Missing script"
-var InvalidScript string = "Invalid script"
+import "errors"
+
+var (
+	ErrorMissingScript = errors.New("missing script")
+	ErrorInvalidScript = errors.New("invalid script")
+)
