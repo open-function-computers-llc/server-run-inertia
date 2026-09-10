@@ -83,6 +83,9 @@ func (s *server) handleDashboard() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// bootstrap the accounts so that we can always have an up to date list
+		s.bootstrapAccounts()
+
 		s.inertiaManager.Render(w, r, "Dashboard", map[string]any{
 			"accounts":              s.accounts,
 			"disks":                 allDiscs,

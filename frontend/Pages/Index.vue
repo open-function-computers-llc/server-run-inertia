@@ -17,7 +17,7 @@
 
     <div class="page">
 
-            <!-- ═══ Left: live telemetry ═══ -->
+            <!-- ═══ Left: hero ═══ -->
             <div class="panel-brand">
                 <div>
                     <div class="hero">
@@ -25,72 +25,12 @@
                             <span class="tag-dot"></span>
                             Internal Ops Platform
                         </div>
-                        <h2 class="hero-headline">Monitor, manage, and audit your server infrastructure</h2>
-                        <p class="hero-intro">Server Run gives your team real-time visibility into logs, health reports, uptime, bandwidth, and domains — all from a single dashboard. Sign in to get started.</p>
-                    </div>
-                    <div class="telemetry">
-                        <div class="telemetry-header">
-                            <span class="telemetry-title">System Overview</span>
-                            <span class="telemetry-live"><span class="dot"></span> Live</span>
-                        </div>
-                        <div class="telemetry-grid">
-                            <div class="telemetry-item">
-                                <span class="label">Uptime</span>
-                                <span class="value">99.97%</span>
-                                <span class="sub">last 30 days</span>
-                            </div>
-                            <div class="telemetry-item">
-                                <span class="label">Active domains</span>
-                                <span class="value">48</span>
-                                <span class="sub">across all hosts</span>
-                            </div>
-                            <div class="telemetry-item">
-                                <span class="label">Avg bandwidth</span>
-                                <span class="value mono">2.4 Gbps</span>
-                                <span class="sub">last 24 hours</span>
-                            </div>
-                            <div class="telemetry-item">
-                                <span class="label">Health report</span>
-                                <span class="value" style="color: oklch(70% 0.14 145);">Healthy</span>
-                                <span class="sub">last checked 32s ago</span>
-                            </div>
-                        </div>
-                        <div class="telemetry-chart" data-od-id="bandwidth-chart" role="img" aria-label="Bandwidth for the last 12 days, in megabytes">
-                            <div class="telemetry-chart-head">
-                                <span class="telemetry-chart-title">Bandwidth</span>
-                                <span class="telemetry-chart-sub">last 12 days</span>
-                            </div>
-                            <div class="chart-y">
-                                <span v-for="tick in reportChartYTicks" :key="tick">{{ tick }}</span>
-                            </div>
-                            <div class="chart-body">
-                                <div class="chart-grid" aria-hidden="true">
-                                    <span></span><span></span><span></span><span></span><span></span>
-                                </div>
-                                <svg class="chart-line" :viewBox="`0 0 ${CHART_W} ${CHART_H}`" preserveAspectRatio="none" aria-hidden="true">
-                                    <path :d="reportChartArea" class="chart-area"></path>
-                                    <path :d="reportChartLine" class="chart-stroke"></path>
-                                    <circle
-                                        v-for="(point, i) in reportChart"
-                                        :key="i"
-                                        class="chart-point"
-                                        :cx="reportChartPoint(i).x"
-                                        :cy="reportChartPoint(i).y"
-                                        r="3">
-                                        <title>{{ point.label + ' — ' + point.value.toLocaleString('en-US') + ' MB' }}</title>
-                                    </circle>
-                                </svg>
-                            </div>
-                            <div class="chart-xlabels" aria-hidden="true">
-                                <span
-                                    v-for="(point, i) in reportChart"
-                                    :key="i"
-                                    class="chart-xlabel-anchor"
-                                    :style="{ left: reportChartPointPct(i) + '%' }">
-                                    <span class="chart-xlabel">{{ point.label }}</span>
-                                </span>
-                            </div>
-                        </div>
+                        <h2 class="hero-headline">Server maintenance, minus the juggling</h2>
+                        <p class="hero-intro">Create and remove accounts, add or retire domains, and keep this server running — day to day, from one place.</p>
+                        <a class="repo-link" href="https://github.com/open-function-computers-llc/server-run-inertia" target="_blank" rel="noopener" aria-label="View the Server Run source code on GitHub">
+                            <GitHubIcon />
+                            View the source on GitHub
+                        </a>
                     </div>
                 </div>
             </div>
@@ -99,7 +39,7 @@
             <div class="panel-auth">
                 <div class="auth-card">
                     <h1>Ready to get started?</h1>
-                    <p class="subtitle">Sign in to manage accounts, review logs, and monitor server health across your infrastructure.</p>
+                    <p class="subtitle">Sign in to start managing this server.</p>
                     <a href="/login" class="btn-primary">Sign in</a>
                 </div>
             </div>
@@ -111,54 +51,13 @@
 
 <script setup>
 import WhiteLabelLogo from '@/Components/WhiteLabelLogo.vue';
+import GitHubIcon from '../Icons/GitHub.vue';
 import { usePage } from '@inertiajs/vue3';
 import Debug from '../Components/Debug.vue';
 import { useTheme } from '../composables/useTheme.js';
 
 const page = usePage();
 const { theme, toggle: toggleTheme } = useTheme();
-
-// Sample report data shown on the homepage (static — real numbers live behind sign-in).
-// One point per generated report, mirroring the /api/accounts/{name}/analytics bandwidth series.
-const reportChart = [
-    { label: '08/05/2026', value: 38210 },
-    { label: '08/06/2026', value: 41780 },
-    { label: '08/07/2026', value: 35940 },
-    { label: '08/08/2026', value: 47620 },
-    { label: '08/09/2026', value: 52310 },
-    { label: '08/10/2026', value: 58460 },
-    { label: '08/11/2026', value: 54890 },
-    { label: '08/12/2026', value: 61240 },
-    { label: '08/13/2026', value: 59030 },
-    { label: '08/14/2026', value: 63470 },
-    { label: '08/15/2026', value: 66820 },
-    { label: '08/16/2026', value: 64150 },
-];
-
-// Round the series max up to a clean axis ceiling (matches Chart.js beginAtZero + nice ticks)
-const reportChartMax = Math.ceil(Math.max(...reportChart.map((p) => p.value)) / 10000) * 10000;
-const reportChartYTicks = [4, 3, 2, 1, 0].map((i) => Math.round((reportChartMax * i) / 4).toLocaleString('en-US'));
-
-// Chart geometry (SVG viewBox: 600 × 130 — the plot area only; x-axis date
-// labels render as HTML below the chart so their font size stays fixed
-// instead of scaling with the svg's rendered width)
-const CHART_W = 600;
-const CHART_H = 130;
-
-const reportChartPoint = (i) => {
-    const x = (i / (reportChart.length - 1)) * CHART_W;
-    const y = CHART_H - (reportChart[i].value / reportChartMax) * CHART_H;
-    return { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
-};
-
-// Same x position as reportChartPoint, expressed as a % for the HTML label row
-const reportChartPointPct = (i) => Math.round((i / (reportChart.length - 1)) * 10000) / 100;
-
-const reportChartLine = reportChart
-    .map((_, i) => `${i === 0 ? 'M' : 'L'}${reportChartPoint(i).x},${reportChartPoint(i).y}`)
-    .join(' ');
-
-const reportChartArea = `${reportChartLine} L${CHART_W},${CHART_H} L0,${CHART_H} Z`;
 </script>
 
 <style lang="scss" scoped>
@@ -230,18 +129,18 @@ main,
     box-shadow: 0 4px 20px oklch(65% 0.18 295 / 0.25);
 }
 
-/* ── Left panel: live telemetry preview ──────────────────── */
+/* ── Left panel: hero ───────────────────────────────────── */
 .panel-brand {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
     padding: 48px 64px;
     border-right: 1px solid $c-od-border;
     position: relative;
     overflow: hidden;
 }
 
-/* Subtle gradient wash behind the telemetry panel */
+/* Subtle gradient wash behind the hero panel */
 .panel-brand::before {
     content: '';
     position: absolute;
@@ -251,102 +150,6 @@ main,
     height: 600px;
     background: radial-gradient(circle, oklch(65% 0.18 295 / 0.08) 0%, transparent 70%);
     pointer-events: none;
-}
-
-/* Live telemetry strip */
-.telemetry {
-    position: relative;
-    z-index: 1;
-    background: $c-od-surface;
-    border: 1px solid $c-od-border;
-    border-radius: 14px;
-    padding: 24px;
-    margin-top: 40px;
-}
-
-.telemetry-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.telemetry-title {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: $c-od-muted;
-}
-
-.telemetry-live {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: $c-od-success;
-    font-weight: 500;
-}
-
-.telemetry-live .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: $c-od-success;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.4;
-    }
-}
-
-.telemetry-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-
-.telemetry-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.telemetry-item .label {
-    font-size: 12px;
-    color: $c-od-muted;
-    letter-spacing: 0.02em;
-}
-
-.telemetry-item .value {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-}
-
-.telemetry-item .value.mono {
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.telemetry-item .sub {
-    font-size: 12px;
-    color: $c-od-muted;
-}
-
-.brand-footer {
-    font-size: 13px;
-    color: $c-od-muted;
-    margin-bottom: 8px;
 }
 
 /* ── Right panel: auth ─────────────────────────────────── */
@@ -423,131 +226,6 @@ main,
     transform: scale(0.985);
 }
 
-/* ── Bandwidth chart (design element inside System Overview) ── */
-.telemetry-chart {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid $c-od-border;
-    display: grid;
-    grid-template-columns: 48px 1fr;
-    grid-template-rows: auto 1fr auto;
-    gap: 8px 8px;
-}
-
-.telemetry-chart-head {
-    grid-column: 1 / -1;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 12px;
-}
-
-.telemetry-chart-title {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: $c-od-fg;
-}
-
-.telemetry-chart-sub {
-    font-size: 11px;
-    color: $c-od-muted;
-    font-variant-numeric: tabular-nums;
-}
-
-.chart-y {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    font-size: 10px;
-    color: $c-od-muted;
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-}
-
-.chart-y span {
-    line-height: 1;
-}
-
-.chart-body {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 600 / 130;
-}
-
-.chart-grid {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.chart-grid span {
-    display: block;
-    width: 100%;
-    height: 1px;
-    background: $c-od-border;
-    opacity: 0.6;
-}
-
-.chart-line {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* The first/last points sit exactly on the viewBox edges; let their
-       radius draw past it instead of being clipped */
-    overflow: visible;
-}
-
-.chart-xlabels {
-    grid-column: 2;
-    position: relative;
-    height: 42px;
-    margin-top: 6px;
-}
-
-.chart-xlabel-anchor {
-    position: absolute;
-    top: 0;
-    width: 0;
-}
-
-.chart-area {
-    fill: $c-od-accent;
-    opacity: 0.2;
-}
-
-.chart-stroke {
-    fill: none;
-    stroke: $c-od-accent;
-    stroke-width: 2;
-    vector-effect: non-scaling-stroke;
-}
-
-.chart-point {
-    fill: $c-od-bg;
-    stroke: $c-od-accent;
-    stroke-width: 2;
-    vector-effect: non-scaling-stroke;
-}
-
-.chart-xlabel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: block;
-    white-space: nowrap;
-    font-size: 10px;
-    color: $c-od-muted;
-    font-variant-numeric: tabular-nums;
-    transform-origin: 100% 0;
-    transform: rotate(-45deg);
-}
-
 /* ── Hero / intro section ───────────────────────────────── */
 .hero {
     padding: 0 0 40px;
@@ -590,6 +268,29 @@ main,
     margin: 0;
 }
 
+.repo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 32px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: $c-od-accent;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+}
+
+.repo-link:hover {
+    border-bottom-color: $c-od-accent;
+}
+
+.repo-link :deep(svg) {
+    width: 18px;
+    height: 18px;
+}
+
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 1024px) {
     .topbar {
@@ -621,10 +322,6 @@ main,
         padding: 40px 24px;
         border-left: none;
     }
-
-    .telemetry-grid {
-        grid-template-columns: 1fr 1fr;
-    }
 }
 
 @media (max-width: 600px) {
@@ -648,25 +345,6 @@ main,
         font-size: 24px;
     }
 
-    .telemetry {
-        display: none;
-    }
-
-    .feature-pills {
-        display: none;
-    }
-
-    .telemetry-chart {
-        grid-template-columns: 44px 1fr;
-    }
-
-    .chart-y {
-        font-size: 9px;
-    }
-
-    .chart-xlabel {
-        font-size: 9px;
-    }
 }
 
 main {
