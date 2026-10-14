@@ -3,7 +3,7 @@
     <div class="toolbar">
         <div class="db-picker">
             <span class="label">Database</span>
-            <select v-if="databases.length" v-model="selectedDb" @change="onDbChange">
+            <select v-if="databases.length" v-model="selectedDb">
                 <option v-for="db in databases" :key="db.name" :value="db.name">
                     {{ db.name }} ({{ db.host }})
                 </option>
@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import Spinner from '../Spinner.vue'
 import Modal from '../Modal.vue'
@@ -173,6 +173,10 @@ function onDbChange() {
     cancelForm()
     loadTables()
 }
+
+// load on mount too: the select is pre-filled with the first database, so a
+// @change handler would never fire until the user manually switches dbs.
+watch(selectedDb, onDbChange, { immediate: true })
 
 async function loadTables() {
     if (!selectedDb.value) return
