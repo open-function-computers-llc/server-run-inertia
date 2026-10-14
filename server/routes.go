@@ -50,6 +50,12 @@ func (s *server) bindRoutes() {
 		// raw JSON routes
 		"GET /api/accounts/{account}/analytics": s.handleAccountAnalytics(),
 		"POST /api/get-uptime-info":             s.handleUptimeInfo(),
+
+		// database admin (Adminer-style, scoped to the account's own databases)
+		"GET  /api/accounts/{account}/databases/{db}/tables":               s.handleDbTables(),
+		"GET  /api/accounts/{account}/databases/{db}/tables/{table}":       s.handleDbTableData(),
+		"POST /api/accounts/{account}/databases/{db}/tables/{table}/rows":  s.handleDbInsertRow(),
+		"PUT  /api/accounts/{account}/databases/{db}/tables/{table}/rows":  s.handleDbUpdateRow(),
 	}
 
 	for path, handler := range protectedRoutes {
