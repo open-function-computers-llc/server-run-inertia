@@ -59,14 +59,14 @@ func (s *server) handleUptimeInfo() http.HandlerFunc {
 		uptimePass := os.Getenv("UPTIME_PASS")
 		uptimeDomain := os.Getenv("UPTIME_DOMAIN")
 
+		output := outputPayload{}
+
 		var payload incomingPayload
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			s.inertiaManager.Share("error", "Problem reading payload")
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			output.ErrorMessage = "Problem reading payload"
+			sendJSONError(w, http.StatusBadRequest, output)
 			return
 		}
-
-		output := outputPayload{}
 
 		if payload.URL == "" {
 			output.ErrorMessage = "Invalid URL: " + payload.URL

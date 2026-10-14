@@ -5,7 +5,7 @@
         <div class="section-header">
             <div>
                 <h4 class="section-title">Uptime Monitoring</h4>
-                <p class="section-sub">Currently monitoring: <strong>{{ account.uptimeURI || 'not set' }}</strong></p>
+                <p class="section-sub">Currently monitoring: <strong>{{ account.uptimeURL || 'not set' }}</strong></p>
             </div>
             <button class="btn-ghost" @click="showUptimeForm = !showUptimeForm">
                 {{ showUptimeForm ? 'Cancel' : 'Update' }}
@@ -14,22 +14,18 @@
 
         <div v-if="showUptimeForm" class="inline-form">
             <div class="input-row">
-                <span class="input-prefix">URI</span>
+                <span class="input-prefix">URL</span>
                 <input
-                    v-model="newUptimeURI"
+                    v-model="uptimeForm.uptimeURL"
                     type="text"
                     placeholder="https://site.com/uptime" />
             </div>
             <p v-if="error" class="error-msg">{{ error }}</p>
             <div class="form-actions">
                 <button class="btn-ghost" @click="cancelUptime">Cancel</button>
-                <button class="btn-primary" @click="updateUptime">Update</button>
+                <button class="btn-primary" :disabled="uptimeForm.processing" @click="updateUptime">Update</button>
             </div>
         </div>
-
-        <Modal v-if="isUpdating">
-            <ScriptRunner script="update-uptime-uri" :envvars="{ ACCOUNT: account.name, UPTIME_URI: newUptimeURI }" @done="onDone" />
-        </Modal>
     </section>
 
     <div class="divider"></div>
@@ -64,7 +60,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { router, useForm } from '@inertiajs/vue3'
 import Modal from '@/Components/Modal.vue'
 import ScriptRunner from '@/Components/ScriptRunner.vue'
 
@@ -75,25 +71,24 @@ const props = defineProps({
     }
 })
 
-const emit = defineEmits(['updated'])
-
 const showUptimeForm = ref(false)
-const newUptimeURI = ref('')
-const isUpdating = ref(false)
+const uptimeForm = useForm({ uptimeURL: '' })
 const showTerminateForm = ref(false)
 const isTerminating = ref(false)
 const error = ref('')
 const lockedDownDisabled = ref(props.account.isLockedDownDisabled || false)
 
-function cancelUptime() { showUptimeForm.value = false; newUptimeURI.value = ''; error.value = '' }
+function cancelUptime() { showUptimeForm.value = false; uptimeForm.reset(); error.value = '' }
 function updateUptime() {
-    if (!newUptimeURI.value.trim()) { error.value = 'URI is required'; return }
+    if (!uptimeForm.uptimeURL.trim()) { error.value = 'URL is required'; return }
     error.value = ''
-    isUpdating.value = true
+    uptimeForm.patch(`/accounts/${props.account.name}/uptime-url`, {
+        preserveScroll: true,
+        onSuccess: (page) => { if (!page.props.error) cancelUptime() },
+    })
 }
 function cancelTerminate() { showTerminateForm.value = false; error.value = '' }
 function terminate() { error.value = ''; isTerminating.value = true }
-function onDone() { isUpdating.value = false; emit('updated', { ...props.account, uptimeURI: newUptimeURI.value.trim() }); cancelUptime() }
 function onTerminate() { isTerminating.value = false; router.visit('/dashboard') }
 </script>
 

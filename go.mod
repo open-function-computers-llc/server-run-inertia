@@ -2,8 +2,6 @@ module github.com/open-function-computers-llc/server-run-inertia
 
 go 1.25
 
-toolchain go1.24.3
-
 require (
 	code.gitea.io/sdk/gitea v0.21.0
 	github.com/dchest/uniuri v1.2.0

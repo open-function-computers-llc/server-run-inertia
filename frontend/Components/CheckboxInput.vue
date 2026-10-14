@@ -1,11 +1,12 @@
 <template>
-<div class="checkbox-field">
+<div :class="['checkbox-field', { disabled }]">
     <input
         type="checkbox"
         :name="name"
         :value="value"
         v-model="proxyChecked"
         @change="changedCheckbox"
+        :disabled="disabled"
         :id="uniqueID" />
     <label :class="{ active: proxyChecked }" :for="uniqueID" v-html="label" />
 </div>
@@ -30,7 +31,11 @@ const props = defineProps({
     },
     name: {
         type: String,
-        default: "",
+        default: ""
+    },
+    disabled: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -57,6 +62,11 @@ const changedCheckbox = () => {
     gap: 10px;
     margin-bottom: 16px;
     cursor: pointer;
+
+    &.disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
 }
 
 input[type="checkbox"] {

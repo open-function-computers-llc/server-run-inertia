@@ -31,6 +31,8 @@ type server struct {
 	defaultLogo     []byte
 	vcsProvider     vcs.Provider
 	vcsErrorMessage string
+	vcsAvailable    bool
+	cms             string
 	socketPath      string
 }
 
@@ -64,6 +66,10 @@ func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
 	}
 	s.inertiaManager.Share("appEnvironment", appEnvironment)
 
+	// share which CMS this server hosts (wordpress|modx, or "" if unknown)
+	s.cms = detectCMS(url)
+	s.inertiaManager.Share("cms", s.cms)
+
 	// share the live reload port with the frontend
 	liveReloadPort := os.Getenv("APP_LIVERELOAD_PORT")
 	if liveReloadPort != "" {
@@ -72,26 +78,26 @@ func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
 
 	s.vcsProvider, _ = dummy.NewProvider()
 
-	// check if VCS is enabled on this server run instance
-	provider, err := vcs.DetermineProvider()
-	if provider == "gitea" {
-		p, err := gitea.NewProvider()
-		if err != nil {
+	// check if VCS is enabled on this server run instance. A misconfigured
+	// provider only disables VCS features, it doesn't stop the server.
+	provider, _ := vcs.DetermineProvider()
+	switch provider {
+	case "gitea":
+		if p, err := gitea.NewProvider(); err != nil {
 			s.vcsErrorMessage = err.Error()
-			return s, nil
+		} else {
+			s.vcsProvider = p
+			s.vcsAvailable = true
 		}
-		s.vcsProvider = p
-	}
-	if provider == "github" {
-		p, err := github.NewProvider()
-		if err != nil {
+	case "github":
+		if p, err := github.NewProvider(); err != nil {
 			s.vcsErrorMessage = err.Error()
-			return s, nil
+		} else {
+			s.vcsProvider = p
+			s.vcsAvailable = true
 		}
-		s.vcsProvider = p
-	}
-	if provider == "bitbucket" {
-		// p = bitbucket.NewProvider()
+	case "bitbucket":
+		s.vcsErrorMessage = "Bitbucket isn't supported yet"
 	}
 
 	s.bindRoutes()

@@ -35,12 +35,14 @@ func (s *server) bindRoutes() {
 	protectedRoutes := map[string]http.HandlerFunc{
 		// inertia pages
 		"GET /dashboard":                                 s.handleDashboard(),
-		"GET /create-account":                            s.handlePage("Account/Create"),
+		"GET /create-account":                            s.handleCreateAccount(),
 		"GET /account/{account}":                         s.handleAccountDetails(""),
 		"GET /importable-accounts":                       s.handleListImportableAccounts(),
 		"GET /logout":                                    s.handleLogout(),
 		"GET /settings":                                  s.handleSettings(),
 		"GET /vcs":                                       s.handleVcs(),
+		"POST /vcs/repos":                                s.handleVcsCreateRepo(),
+		"POST /vcs/repos/deploy-keys":                    s.handleVcsAddDeployKey(),
 		"POST /accounts/{account}/domains":               s.handleAddDomain(),
 		"PUT /accounts/{account}/domains/primary":        s.handleSetPrimaryDomain(),
 		"DELETE /accounts/{account}/domains/{domain}":    s.handleDeleteDomain(),

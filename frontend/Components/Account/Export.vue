@@ -4,7 +4,7 @@
     <p class="desc">This will prepare this account to be imported into another server.</p>
     <p class="desc">That server will need to be part of this pool for the account to show up. When you're sure you're ready to import this account on the new server, click "Importable Accounts" on that new server once this process completes.</p>
     <button class="btn-primary" @click="runExport = true">Export</button>
-    <ScriptRunner v-if="runExport" script="export" :args="{ ACCOUNT_NAME: account.name }" @done="() => { runExport = false; }" />
+    <ScriptRunner v-if="runExport" script="export" :envvars="{ ACCOUNT: account.name }" @done="() => { runExport = false; }" />
 </div>
 </template>
 

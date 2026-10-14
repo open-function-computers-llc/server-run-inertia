@@ -13,6 +13,7 @@
         :required="required"
         :min="min"
         :max="max"
+        :readonly="readonly"
         :tabindex="tabIndex ?? null"
         @input="$emit('update:modelValue', $event.target.value)"
         @keydown.enter="handleOnEnter"
@@ -37,6 +38,7 @@ const props = defineProps([
     "autofocus",
     "min",
     "max",
+    "readonly",
 ]);
 
 defineEmits(["update:modelValue"]);

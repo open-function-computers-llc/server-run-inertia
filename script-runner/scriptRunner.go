@@ -9,7 +9,9 @@ import (
 	"github.com/open-function-computers-llc/server-run-inertia/account"
 )
 
-func StreamScriptOutput(scriptName string, args, env map[string]string, communicationChannel *chan string) {
+// StreamScriptOutput runs a script, sending each line of output down the
+// channel, and returns the script's error (if any) once it has exited.
+func StreamScriptOutput(scriptName string, args, env map[string]string, communicationChannel *chan string) error {
 	defer close(*communicationChannel)
 
 	scriptsRoot := os.Getenv("SCRIPTS_ROOT")
@@ -31,7 +33,7 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 
 	if err != nil {
 		*communicationChannel <- err.Error()
-		return
+		return err
 	}
 
 	// time to run the script!
@@ -39,9 +41,10 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 	// set up the command runner
 	var cmd *exec.Cmd
 	if t == ARGSCRIPT {
-		argValues := []string{}
-		for _, a := range args {
-			argValues = append(argValues, a)
+		argValues, err := argumentScripts[scriptName].orderedArgs(args)
+		if err != nil {
+			*communicationChannel <- err.Error()
+			return err
 		}
 
 		// Guard the lock script - don't run if locked-down is disabled for this account
@@ -51,12 +54,12 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 				a, err := account.Find(accountName)
 				if err == nil && a.IsLockedDownDisabled {
 					*communicationChannel <- "Lock-down is disabled for this account (isLockedDownDisabled is set). The lock script will not run."
-					return
+					return nil
 				}
 			}
 		}
 
-		cmd = exec.Command(scriptsRoot+argumentScripts[scriptName], argValues...)
+		cmd = exec.Command(scriptsRoot+argumentScripts[scriptName].filename, argValues...)
 	}
 
 	if t == PLAINSCRIPT {
@@ -92,10 +95,17 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 	err = cmd.Start()
 	if err != nil {
 		*communicationChannel <- "Error running the command: " + err.Error()
-		return
+		return err
 	}
 
 	wg.Wait()
+
+	// reap the process and report how it exited
+	err = cmd.Wait()
+	if err != nil {
+		*communicationChannel <- "Script exited with an error: " + err.Error()
+	}
+	return err
 }
 
 func ReturnScriptOutput(scriptName string, args, env map[string]string) ([]byte, error) {
@@ -108,8 +118,11 @@ func ReturnScriptOutput(scriptName string, args, env map[string]string) ([]byte,
 	// set up the command runner
 	var cmd *exec.Cmd
 	if t == ARGSCRIPT {
-		// TODO: add the arguments here correctly
-		cmd = exec.Command(scriptsRoot + argumentScripts[scriptName])
+		argValues, err := argumentScripts[scriptName].orderedArgs(args)
+		if err != nil {
+			return nil, err
+		}
+		cmd = exec.Command(scriptsRoot+argumentScripts[scriptName].filename, argValues...)
 	}
 
 	if t == PLAINSCRIPT {
@@ -123,6 +136,9 @@ func ReturnScriptOutput(scriptName string, args, env map[string]string) ([]byte,
 			cmd.Env = append(cmd.Env, key+"="+val)
 		}
 	}
+
+	cmd.Env = append(cmd.Env, "NOCONFIRM=yes")
+	cmd.Env = append(cmd.Env, "TERM=xterm-mono")
 
 	return cmd.Output()
 }

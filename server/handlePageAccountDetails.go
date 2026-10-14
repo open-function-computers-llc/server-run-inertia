@@ -21,7 +21,7 @@ func (s *server) handleAccountDetails(tab string) http.HandlerFunc {
 		}
 
 		if !foundAccount {
-			s.inertiaManager.Share("error", "Account not found: "+r.PathValue("account"))
+			s.flashError(w, "Account not found: "+r.PathValue("account"))
 			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 			return
 		}
@@ -34,8 +34,9 @@ func (s *server) handleAccountDetails(tab string) http.HandlerFunc {
 			"export":    "Account/Export",
 			"settings":  "Account/Settings",
 		}
-		s.inertiaManager.Render(w, r, tabMapper[tab], map[string]any{
-			"account": a,
+		s.render(w, r, tabMapper[tab], map[string]any{
+			"account":       a,
+			"stagingDomain": stagingDomain(),
 		})
 	}
 }

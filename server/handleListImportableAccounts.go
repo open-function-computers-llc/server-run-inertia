@@ -18,7 +18,7 @@ func (s *server) handleListImportableAccounts() http.HandlerFunc {
 			}
 		}
 
-		s.inertiaManager.Render(w, r, "Account/Importable", map[string]any{
+		s.render(w, r, "Account/Importable", map[string]any{
 			"accounts": importableAccounts,
 		})
 	}

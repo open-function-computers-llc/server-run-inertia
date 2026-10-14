@@ -26,7 +26,6 @@ getLogo();
 <style lang="scss" scoped>
 div {
     width: 55px;
-    padding-top: 5px;
 
     img {
         width: 100%;

@@ -1,8 +1,20 @@
 package github
 
-import "fmt"
+import (
+	"net/http"
+	"net/url"
+)
 
 func (p gitHubProvider) CreateRepository(name string) error {
-	fmt.Println("i'm github!!!")
-	return nil
+	path := "/user/repos"
+	if p.org != "" {
+		path = "/orgs/" + url.PathEscape(p.org) + "/repos"
+	}
+
+	return p.do(http.MethodPost, path, map[string]any{
+		"name":        name,
+		"description": "This was created automatically from server-run",
+		"private":     true,
+		"auto_init":   true,
+	}, nil)
 }

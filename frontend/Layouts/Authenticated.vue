@@ -1,6 +1,6 @@
 <template>
 <Debug v-if="appEnvironment === 'development'" />
-<ErrorFlash v-if="errorMessage" :error="errorMessage" />
+<ErrorFlash v-if="errorMessage" :key="flashKey" :error="errorMessage" />
 
 <header>
     <nav>
@@ -14,7 +14,10 @@
                 <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                 <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             </button>
-            <Link href="/settings" class="nav-btn">
+            <Link href="/vcs" class="nav-btn" title="Version control">
+                <Git />
+            </Link>
+            <Link href="/settings" class="nav-btn" title="Settings">
                 <Settings />
             </Link>
             <Link href="/logout" class="nav-btn danger">
@@ -35,16 +38,22 @@
 <script setup>
 import LoadAverages from "@/Components/LoadAverages.vue";
 import ErrorFlash from "@/Components/ErrorFlash.vue";
-import { Link, usePage } from "@inertiajs/vue3";
+import { Link, usePage, router } from "@inertiajs/vue3";
 import WhiteLabelLogo from "@/Components/WhiteLabelLogo.vue";
 import Settings from "@/Icons/Settings.vue";
+import Git from "@/Icons/Git.vue";
 import Debug from "@/Components/Debug.vue";
-import { computed } from "vue";
+import { computed, ref, onUnmounted } from "vue";
 import { useTheme } from "../composables/useTheme.js";
 
 const page = usePage();
 const appEnvironment = page.props.appEnvironment;
 const errorMessage = computed(() => page.props.error);
+
+// remount the flash on every visit so back-to-back errors each get shown
+const flashKey = ref(0);
+const stopListening = router.on("navigate", () => { flashKey.value++; });
+onUnmounted(stopListening);
 const { theme, toggle: toggleTheme } = useTheme();
 </script>
 
@@ -52,7 +61,7 @@ const { theme, toggle: toggleTheme } = useTheme();
 @import "../scss/variables.scss";
 
 header {
-    height: 61px;
+    height: 68px;
     padding: 0 64px;
     background: $c-od-surface;
     border-bottom: 1px solid $c-od-border;

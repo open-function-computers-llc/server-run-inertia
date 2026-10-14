@@ -6,7 +6,7 @@
             <Link href="/dashboard" class="back-link">← Back to accounts</Link>
             <div class="account-heading">
                 <LockUnlock :account="account" />
-                <button @click="runClone = true" class="btn-ghost">
+                <button v-if="page.props.cms !== 'modx'" @click="runClone = true" class="btn-ghost">
                     <Clone /> Clone Account
                 </button>
             </div>
@@ -26,17 +26,20 @@
         </div>
     </div>
 
-    <ScriptRunner v-if="runClone" script="cloneAccount" :args="{ ACCOUNT_NAME: account.name }" @done="() => { runClone = false; }" />
+    <Modal v-if="runClone">
+        <CloneAccount :account="account" :stagingDomain="stagingDomain" @close="runClone = false" />
+    </Modal>
 </div>
 </template>
 
 <script setup>
 import { ref } from "vue";
-import { Link, Head } from '@inertiajs/vue3';
+import { Link, Head, usePage } from '@inertiajs/vue3';
 import Clone from "@/Icons/Clone.vue";
 import Layout from "@/Layouts/Authenticated.vue";
 import Uptime from "@/Components/Uptime.vue";
-import ScriptRunner from "@/Components/ScriptRunner.vue";
+import Modal from "@/Components/Modal.vue";
+import CloneAccount from "@/Components/Account/CloneAccount.vue";
 import LockUnlock from "@/Components/Account/LockUnlock.vue";
 import Analytics from "@/Components/Account/Analytics.vue";
 import Domains from "@/Components/Account/Domains.vue";
@@ -52,9 +55,14 @@ const props = defineProps({
     account: {
         type: Object,
         default: {}
-    }
+    },
+    stagingDomain: {
+        type: String,
+        default: "stagingsubdomain.com",
+    },
 });
 
+const page = usePage();
 const activeTab = ref('domains');
 const runClone = ref(false);
 
@@ -82,6 +90,12 @@ const tabComponents = {
     justify-content: space-between;
     align-items: flex-start;
     gap: 20px;
+}
+
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .toolbar-left {

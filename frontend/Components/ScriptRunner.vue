@@ -5,11 +5,12 @@
         <li v-for="message in messages">{{ message }}</li>
     </ul>
     <Link v-if="isDone && completeHref" :href="completeHref" class="done-btn">Done</Link>
+    <button v-else-if="isDone" class="done-btn" @click="emit('done')">Done</button>
 </div>
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -35,14 +36,6 @@ const messages = ref([]);
 const isDone = ref(false);
 
 const emit = defineEmits(['done']);
-
-watch(isDone, () => {
-    if (isDone.value) {
-        setTimeout(() => {
-            emit("done");
-        }, 1000);
-    }
-});
 
 const scriptSocketRunner = () => {
     if (props.script.value === "") {
@@ -92,7 +85,7 @@ scriptSocketRunner();
     font-family: monospace;
     font-size: 13px;
     padding: 16px;
-    background: $c-od-bg;
+    background: $c-od-surface-hi;
     color: $c-od-fg;
     border: 1px solid $c-od-border;
     border-radius: 10px;
