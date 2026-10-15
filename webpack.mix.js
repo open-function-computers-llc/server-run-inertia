@@ -1,6 +1,8 @@
 let path = require("path");
 let mix = require('laravel-mix');
 
+mix.disableNotifications();
+
 mix.alias({
    "@": path.join(__dirname, "frontend"),
 });
