@@ -4,15 +4,15 @@
 
     <div class="log-row">
         <span>Access Logs</span>
-        <button class="btn-primary" @click="runAccessLog = true">Export</button>
+        <button class="btn-primary" :disabled="runAccessLog || runErrorLog" @click="runAccessLog = true">View last 200 lines</button>
     </div>
     <div class="log-row">
         <span>Error Logs</span>
-        <button class="btn-primary" @click="runErrorLog = true">Export</button>
+        <button class="btn-primary" :disabled="runAccessLog || runErrorLog" @click="runErrorLog = true">View last 200 lines</button>
     </div>
 
-    <ScriptRunner v-if="runAccessLog" script="log-viewer" :args="{ LOG_TYPE: 'access', account: account.name }" @done="() => { runAccessLog = false; }" />
-    <ScriptRunner v-if="runErrorLog" script="log-viewer" :args="{ LOG_TYPE: 'error' }" @done="() => { runErrorLog = false; }" />
+    <ScriptRunner v-if="runAccessLog" script="log-viewer" :args="{ LOG_TYPE: 'access', ACCOUNT_NAME: account.name }" @done="() => { runAccessLog = false; }" />
+    <ScriptRunner v-if="runErrorLog" script="log-viewer" :args="{ LOG_TYPE: 'error', ACCOUNT_NAME: account.name }" @done="() => { runErrorLog = false; }" />
 </div>
 </template>
 
@@ -69,5 +69,10 @@ const runErrorLog = ref(false);
     transition: opacity 0.15s;
 
     &:hover { opacity: 0.92; }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
 }
 </style>

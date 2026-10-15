@@ -34,8 +34,8 @@ func scriptType(name string) (string, error) {
 
 func VerifyAllScriptsExist() error {
 	for _, v := range argumentScripts {
-		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v); errors.Is(err, os.ErrNotExist) {
-			return errx.Wrapf("missing script", fmt.Errorf("script %q not found in SCRIPTS_ROOT", v), ErrorMissingScript)
+		if _, err := os.Stat(os.Getenv("SCRIPTS_ROOT") + v.filename); errors.Is(err, os.ErrNotExist) {
+			return errx.Wrapf("missing script", fmt.Errorf("script %q not found in SCRIPTS_ROOT", v.filename), ErrorMissingScript)
 		}
 	}
 	for _, v := range plainScripts {

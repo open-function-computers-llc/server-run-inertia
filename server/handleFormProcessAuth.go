@@ -19,26 +19,26 @@ func (s *server) handleFormProcessAuth() http.HandlerFunc {
 		var payload incomingPayload
 		bytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			s.inertiaManager.Share("error", "Error reading payload body")
+			s.flashError(w, "Error reading payload body")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
 		err = json.Unmarshal(bytes, &payload)
 		if err != nil {
-			s.inertiaManager.Share("error", "Invalid JSON Body")
+			s.flashError(w, "Invalid JSON Body")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
 		if payload.Password == "" || payload.Username == "" {
-			s.inertiaManager.Share("error", "Both username and password are required")
+			s.flashError(w, "Both username and password are required")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
 		if payload.Username != s.authUser || payload.Password != s.authPassword {
-			s.inertiaManager.Share("error", "Invalid Credentials")
+			s.flashError(w, "Invalid Credentials")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}

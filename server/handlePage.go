@@ -6,6 +6,6 @@ import (
 
 func (s *server) handlePage(pageName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		s.inertiaManager.Render(w, r, pageName, nil)
+		s.render(w, r, pageName, nil)
 	}
 }

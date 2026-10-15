@@ -12,11 +12,12 @@ var envScripts = map[string]envScript{
 	"addAccount": {
 		filename:     "create-new-account.sh",
 		requiredEnvs: []string{"ACCOUNT_NAME"},
-		optionalEnvs: []string{"DOMAIN"},
+		optionalEnvs: []string{"DOMAIN", "ADMIN_PASSWORD", "SITE_TITLE", "ADMIN_USERNAME", "ADMIN_EMAIL"},
 	},
 	"cloneAccount": {
 		filename:     "clone-wordpress-account.sh",
-		requiredEnvs: []string{"SOURCE_ACCOUNT", "DESTINATION_ACCOUNT", "DESTINATION_DOMAIN"},
+		requiredEnvs: []string{"SOURCE_ACCOUNT", "DESTINATION_ACCOUNT"},
+		optionalEnvs: []string{"DESTINATION_DOMAIN"},
 	},
 	"terminateAccount": {
 		filename:     "ofco-delete-account.sh",
@@ -37,10 +38,6 @@ var envScripts = map[string]envScript{
 	"update-wordpress-domain": {
 		filename:     "change-wordpress-domain.sh",
 		requiredEnvs: []string{"DOMAIN", "ACCOUNT"},
-	},
-	"update-uptime-url": {
-		filename:     "update-uptime-url.sh",
-		requiredEnvs: []string{"ACCOUNT", "UPTIME_URI"},
 	},
 }
 

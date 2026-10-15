@@ -42,8 +42,18 @@ func (s *server) handleStreamScriptRunner() http.HandlerFunc {
 			sendJSONError(w, http.StatusInternalServerError, map[string]string{
 				"error": "Problem setting up the web socket connection",
 			})
+			return
 		}
 		defer c.Close()
+
+		// some scripts' arguments must be built server side
+		if script == "log-viewer" {
+			args, err = s.logViewerArgs(args)
+			if err != nil {
+				c.WriteJSON(map[string]interface{}{"message": err.Error()})
+				return
+			}
+		}
 
 		commChannel := make(chan string)
 

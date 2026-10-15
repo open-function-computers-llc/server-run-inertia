@@ -86,7 +86,7 @@ func (s *server) handleDashboard() http.HandlerFunc {
 		// bootstrap the accounts so that we can always have an up to date list
 		s.bootstrapAccounts()
 
-		s.inertiaManager.Render(w, r, "Dashboard", map[string]any{
+		s.render(w, r, "Dashboard", map[string]any{
 			"accounts":              s.accounts,
 			"disks":                 allDiscs,
 			"accountsCanBeImported": totalImportableAccounts() > 0,
