@@ -21,7 +21,12 @@
     </div>
 
     <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="notice" class="notice-msg">{{ notice }}</div>
+
+    <transition name="toast-fade">
+        <div v-if="toast" class="toast" :class="'toast-' + toast.kind" role="status">
+            <span class="toast-icon">{{ toast.kind === 'success' ? '✓' : '!' }}</span>{{ toast.text }}
+        </div>
+    </transition>
 
     <div v-if="databases.length" class="layout">
         <!-- compact table list -->
@@ -62,11 +67,14 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(row, ri) in tableData.rows" :key="ri">
-                                <td class="actions-col">
+                            <tr v-for="(row, ri) in tableData.rows" :key="ri"
+                                :class="{ expanded: expandedRow === ri }"
+                                @click="toggleRowExpand(ri)">
+                                <td class="actions-col" @click.stop>
                                     <button class="btn-mini" :disabled="!hasPK" :title="hasPK ? 'Edit row' : 'Editing requires a primary key'" @click="startEdit(row)">Edit</button>
+                                    <button class="btn-mini btn-danger" :disabled="!hasPK" :title="hasPK ? 'Delete row' : 'Deleting requires a primary key'" @click="startDelete(row)">Del</button>
                                 </td>
-                                <td v-for="(val, ci) in row" :key="ci" class="cell">
+                                <td v-for="(val, ci) in row" :key="ci" class="cell" :title="expandedRow === ri ? '' : 'Click row to expand'">
                                     <span v-if="isNull(val)" class="null-val">NULL</span>
                                     <template v-else>{{ formatCell(val) }}</template>
                                 </td>
@@ -93,15 +101,16 @@
             <div v-if="formError" class="error-msg">{{ formError }}</div>
 
             <div class="form-fields">
-                <div v-for="f in formFields" :key="f.name" class="field">
+                <div v-for="f in formFields" :key="f.name" class="field" :class="{ 'field-invalid': fieldErrors[f.name] }">
                     <label :for="'f-' + f.name">
                         {{ f.name }}
-                        <span class="type">({{ f.type }}{{ f.isPk ? ', PK' : '' }}{{ f.autoIncrement ? ', auto-inc' : '' }}{{ f.nullable ? ', NULL ok' : '' }})</span>
+                        <span class="type">({{ f.columnType || f.type }}{{ f.isPk ? ', PK' : '' }}{{ f.autoIncrement ? ', auto-inc' : '' }}{{ f.nullable ? ', NULL ok' : '' }})</span>
                     </label>
                     <input
                         v-if="!isLongText(f)"
                         :id="'f-' + f.name"
                         :type="inputType(f)"
+                        :step="inputStep(f)"
                         v-model="f.value"
                         :readonly="(formMode === 'edit' && f.isPk) || (formMode === 'add' && f.autoIncrement)" />
                     <textarea
@@ -109,6 +118,7 @@
                         :id="'f-' + f.name"
                         rows="4"
                         v-model="f.value"></textarea>
+                    <p v-if="fieldErrors[f.name]" class="field-error">{{ fieldErrors[f.name] }}</p>
                 </div>
                 <p v-if="formFields.length === 0" class="muted">Nothing to edit — all columns are auto-managed.</p>
             </div>
@@ -116,6 +126,27 @@
             <div class="form-actions">
                 <button class="btn-primary" :disabled="saving" @click="saveRow">{{ saving ? 'Saving…' : (formMode === 'add' ? 'Insert row' : 'Save changes') }}</button>
                 <button class="btn-ghost" :disabled="saving" @click="cancelForm">Cancel</button>
+            </div>
+        </div>
+    </Modal>
+
+    <!-- delete confirmation modal -->
+    <Modal v-if="deleteTarget">
+        <div class="row-form">
+            <div class="form-head">
+                <h3>Delete row from <span class="table-title">{{ selectedTable }}</span>?</h3>
+                <button class="btn-ghost" @click="cancelDelete">✕ Close</button>
+            </div>
+            <p class="muted small">This permanently removes the row identified by:</p>
+            <ul class="pk-list">
+                <li v-for="[name, val] in deleteTarget.pkValues" :key="name">
+                    <strong>{{ name }}</strong> = <span class="pk-val">{{ isNull(val) ? 'NULL' : val }}</span>
+                </li>
+            </ul>
+            <div v-if="deleteError" class="error-msg">{{ deleteError }}</div>
+            <div class="form-actions">
+                <button class="btn-danger-solid" :disabled="deleting" @click="confirmDelete">{{ deleting ? 'Deleting…' : 'Delete row' }}</button>
+                <button class="btn-ghost" :disabled="deleting" @click="cancelDelete">Cancel</button>
             </div>
         </div>
     </Modal>
@@ -148,12 +179,29 @@ const loadingTables = ref(false)
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
-const notice = ref('')
+const toast = ref(null)               // { text, kind } — transient confirmation banner
+let toastTimer = null
+
+function showToast(text, kind = 'success') {
+    if (toastTimer) clearTimeout(toastTimer)
+    toast.value = { text, kind }
+    toastTimer = setTimeout(() => { toast.value = null; toastTimer = null }, 4000)
+}
 
 const formMode = ref(null)          // null | 'add' | 'edit'
 const formFields = ref([])
 const formError = ref('')
+const fieldErrors = ref({})           // { [columnName]: 'message' } — per-field validation
 const editingPK = ref({})
+
+const expandedRow = ref(null)       // row index whose cells are expanded
+const deleting = ref(false)
+const deleteTarget = ref(null)      // { pkValues: [[name, value], ...] } | null
+const deleteError = ref('')
+
+function toggleRowExpand(ri) {
+    expandedRow.value = expandedRow.value === ri ? null : ri
+}
 
 const apiBase = computed(() => `/api/accounts/${encodeURIComponent(props.account.name)}/databases/${encodeURIComponent(selectedDb.value)}`)
 
@@ -169,7 +217,6 @@ function onDbChange() {
     tables.value = []
     tableData.value = null
     error.value = ''
-    notice.value = ''
     cancelForm()
     loadTables()
 }
@@ -196,7 +243,7 @@ async function loadTables() {
 function selectTable(t) {
     selectedTable.value = t.name
     error.value = ''
-    notice.value = ''
+    expandedRow.value = null
     cancelForm()
     loadTableData()
 }
@@ -205,6 +252,7 @@ async function loadTableData() {
     if (!selectedTable.value) return
     loading.value = true
     error.value = ''
+    expandedRow.value = null
     try {
         const res = await axios.get(`${apiBase.value}/tables/${encodeURIComponent(selectedTable.value)}`, {
             params: { limit: rowLimit.value || 100 }
@@ -239,16 +287,26 @@ function formatCell(val) {
 
 // ---------- column input mapping ----------
 
-const numericTypes = ['int', 'bigint', 'smallint', 'mediumint', 'tinyint', 'decimal', 'numeric', 'float', 'double', 'bit', 'year']
 const longTypes = ['text', 'tinytext', 'mediumtext', 'longtext', 'json', 'blob', 'tinyblob', 'mediumblob', 'longblob']
 
+// Numeric columns deliberately use type="text", NOT type="number": with
+// type="number" the browser reports an invalid entry (e.g. "abc") as an empty
+// string, the server then maps empty->NULL for nullable columns, and the
+// user's typo silently wipes the value. type="text" preserves what was typed
+// so validateFields() can reject it with a real message.
 function inputType(col) {
     const t = (col.type || '').toLowerCase()
-    if (numericTypes.includes(t)) return 'number'
     if (t === 'date') return 'date'
     if (t === 'time') return 'time'
     if (t === 'datetime' || t === 'timestamp') return 'datetime-local'
     return 'text'
+}
+
+// step for <input type=datetime-local>; decimals get their declared scale.
+function inputStep(col) {
+    const t = (col.type || '').toLowerCase()
+    if (t === 'datetime' || t === 'timestamp') return '1'
+    return null
 }
 
 function isLongText(col) {
@@ -270,7 +328,167 @@ function toInputValue(col, val) {
     return String(val)
 }
 
-// ---------- row edit / add ----------
+// ---------- client-side validation ----------
+//
+// The server is the authority (it re-checks every identifier against
+// information_schema and binds all values), but MySQL in non-strict mode
+// silently coerces junk — "abc" into an INT becomes 0, and the browser's
+// type="number" quietly turns an invalid entry into "" which the server then
+// maps to NULL. That wipes data with no feedback, so we reject obvious type
+// errors here using the declared column type from information_schema, while
+// still letting MySQL be the final say on anything subtle.
+
+function parseColumnType(col) {
+    const raw = (col.columnType || col.type || '').toLowerCase()
+    const base = raw.split('(')[0].trim()
+    const unsigned = raw.includes('unsigned')
+    const out = { base, unsigned, raw }
+    const lenMatch = raw.match(/\((\d+)\)/)
+    const decMatch = raw.match(/\((\d+)\s*,\s*(\d+)\)/)
+    if (decMatch) { out.precision = parseInt(decMatch[1], 10); out.scale = parseInt(decMatch[2], 10) }
+    else if (lenMatch) { out.length = parseInt(lenMatch[1], 10) }
+    if (base === 'enum' || base === 'set') {
+        out.allowed = [...raw.matchAll(/'([^']*)'/g)].map((m) => m[1])
+    }
+    return out
+}
+
+const intRanges = {
+    tinyint:   { min: -128,        max: 127 },
+    smallint:  { min: -32768,      max: 32767 },
+    mediumint: { min: -8388608,    max: 8388607 },
+    int:       { min: -2147483648, max: 2147483647 },
+    integer:   { min: -2147483648, max: 2147483647 },
+    bigint:    { min: -9223372036854775808n, max: 9223372036854775807n },
+    serial:    { min: 0,           max: 4294967295 },
+}
+
+const EMPTY_OK = Symbol('empty-ok')
+
+function validateValue(col, value) {
+    const raw = value === null || value === undefined ? '' : String(value)
+    const trimmed = raw.trim()
+
+    if (trimmed === '') {
+        // empty means NULL only where the column allows it; otherwise MySQL
+        // would silently insert 0 / '' and destroy the previous value.
+        if (col.nullable) return EMPTY_OK
+        if (col.autoIncrement) return EMPTY_OK
+        return 'This column does not allow NULL — enter a value.'
+    }
+
+    const t = parseColumnType(col)
+    const isInt = t.base in intRanges || t.base === 'bit'
+
+    if (isInt) {
+        if (!/^[+-]?\d+$/.test(trimmed)) return `Must be a whole number (${t.raw}) — "${raw}" is not valid.`
+        if (t.base === 'bit') {
+            const bits = t.length || 1
+            const max = 2 ** bits - 1
+            if (+trimmed < 0 || +trimmed > max) return `bit(${bits}) accepts 0 to ${max}.`
+            return null
+        }
+        if (t.base === 'year') {
+            const y = +trimmed
+            if (!(y === 0 || (y >= 1901 && y <= 2155))) return 'YEAR accepts 1901–2155 (or 0).'
+            return null
+        }
+        const r = intRanges[t.base]
+        if (t.unsigned && trimmed.startsWith('-')) return `${t.raw} cannot be negative (unsigned).`
+        // BigInt throughout: Number() would lose precision near the bigint bounds.
+        let big, min, max
+        try {
+            big = BigInt(trimmed)
+            min = BigInt(t.unsigned ? 0 : r.min)
+            max = BigInt(t.unsigned ? r.max : r.max)
+        } catch (e) { return `Must be a whole number (${t.raw}).` }
+        if (big < min || big > max) return `Out of range for ${t.raw} (${min} to ${max}).`
+        return null
+    }
+
+    if (t.base === 'decimal' || t.base === 'numeric') {
+        if (!/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(trimmed)) return `Must be a number (${t.raw}) — "${raw}" is not valid.`
+        if (t.scale !== undefined) {
+            const frac = (trimmed.split('.')[1] || '').length
+            if (frac > t.scale) return `${t.raw} allows at most ${t.scale} decimal place(s); you entered ${frac}.`
+        }
+        if (t.precision !== undefined) {
+            const digits = trimmed.replace(/^[+-]?0+/, '').replace('.', '').replace(/e.*$/i, '').length
+            if (digits > t.precision) return `${t.raw} allows at most ${t.precision} total digits.`
+        }
+        return null
+    }
+
+    if (t.base === 'float' || t.base === 'double' || t.base === 'real') {
+        if (!/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(trimmed) || !isFinite(Number(trimmed))) {
+            return `Must be a number (${t.raw}) — "${raw}" is not valid.`
+        }
+        return null
+    }
+
+    if (t.base === 'char' || t.base === 'varchar') {
+        if (t.length !== undefined && raw.length > t.length) return `Too long: ${t.raw} holds ${t.length} characters, you entered ${raw.length}.`
+        return null
+    }
+
+    if (t.base === 'binary' || t.base === 'varbinary') {
+        if (t.length !== undefined && raw.length > t.length) return `Too long: ${t.raw} holds ${t.length} bytes.`
+        return null
+    }
+
+    if (t.base === 'enum') {
+        if (t.allowed && !t.allowed.includes(raw)) return `Must be one of: ${t.allowed.join(', ')}.`
+        return null
+    }
+
+    if (t.base === 'set') {
+        if (t.allowed) {
+            const parts = raw.split(',').map((s) => s.trim()).filter((s) => s !== '')
+            const bad = parts.filter((p) => !t.allowed.includes(p))
+            if (bad.length) return `Not allowed in set: ${bad.join(', ')} (options: ${t.allowed.join(', ')}).`
+        }
+        return null
+    }
+
+    if (t.base === 'date') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed) || isNaN(Date.parse(trimmed))) return 'Use a valid date, YYYY-MM-DD.'
+        return null
+    }
+
+    if (t.base === 'time') {
+        if (!/^([+-])?\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(trimmed)) return 'Use a valid time, HH:MM or HH:MM:SS.'
+        return null
+    }
+
+    if (t.base === 'datetime' || t.base === 'timestamp') {
+        if (!/^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?)?$/.test(trimmed) || isNaN(Date.parse(trimmed))) {
+            return 'Use a valid date/time, YYYY-MM-DD HH:MM:SS.'
+        }
+        return null
+    }
+
+    if (t.base === 'json') {
+        try { JSON.parse(trimmed) } catch (e) { return 'Not valid JSON.' }
+        return null
+    }
+
+    // text/blob and anything unusual: MySQL decides.
+    return null
+}
+
+function validateFields() {
+    const errs = {}
+    for (const f of formFields.value) {
+        // server-managed columns are not validated
+        if (formMode.value === 'add' && f.autoIncrement) continue
+        if (formMode.value === 'edit' && f.isPk) continue
+        const msg = validateValue(f, f.value)
+        if (msg && msg !== EMPTY_OK) errs[f.name] = msg
+    }
+    fieldErrors.value = errs
+    return Object.keys(errs).length === 0
+}
+
 
 function buildFormFields(rowValues) {
     if (!tableData.value) return []
@@ -286,6 +504,7 @@ function startEdit(row) {
         return
     }
     formError.value = ''
+    fieldErrors.value = {}
     formMode.value = 'edit'
     formFields.value = buildFormFields(row)
     editingPK.value = {}
@@ -297,6 +516,7 @@ function startEdit(row) {
 
 function startAdd() {
     formError.value = ''
+    fieldErrors.value = {}
     formMode.value = 'add'
     formFields.value = buildFormFields(null)
     editingPK.value = {}
@@ -306,15 +526,23 @@ function cancelForm() {
     formMode.value = null
     formFields.value = []
     formError.value = ''
+    fieldErrors.value = {}
     editingPK.value = {}
 }
 
 async function saveRow() {
     if (saving.value || !tableData.value) return
+
+    // Reject obvious type violations before anything is sent, so a typo can
+    // never silently wipe a value (see validateValue for why this matters).
+    if (!validateFields()) {
+        formError.value = 'Fix the highlighted field(s) before saving — nothing was changed.'
+        return
+    }
+
     saving.value = true
     formError.value = ''
     error.value = ''
-    notice.value = ''
 
     // Build the multipart body the server expects: col_<name> (and pk_<name>
     // on updates). Server whitelists column names against information_schema
@@ -341,13 +569,66 @@ async function saveRow() {
             ? await axios.post(url, body)
             : await axios.put(url, body)
         if (res.data.error) { formError.value = res.data.error; return }
-        notice.value = res.data.message || (formMode.value === 'add' ? 'Row added.' : 'Row updated.')
+        const verb = formMode.value === 'add' ? 'Row added to' : 'Row updated in'
+        showToast(`${verb} ${selectedTable.value} — ${res.data.message || 'saved'}.`)
         cancelForm()
         await loadTableData()
     } catch (err) {
         formError.value = apiError(err, 'Save failed — values are validated server-side, check the column types.')
     } finally {
         saving.value = false
+    }
+}
+
+// ---------- row delete ----------
+
+function startDelete(row) {
+    if (!hasPK.value) {
+        error.value = 'This table has no primary key, so rows can\u2019t be deleted safely.'
+        return
+    }
+    deleteError.value = ''
+    const pkValues = []
+    for (const pk of tableData.value.primaryKey) {
+        const idx = tableData.value.columnInfo.findIndex((c) => c.name === pk)
+        pkValues.push([pk, idx >= 0 ? row[idx] : null])
+    }
+    deleteTarget.value = { pkValues }
+}
+
+function cancelDelete() {
+    deleteTarget.value = null
+    deleteError.value = ''
+}
+
+async function confirmDelete() {
+    if (deleting.value || !deleteTarget.value) return
+    deleting.value = true
+    deleteError.value = ''
+    error.value = ''
+
+    const body = new FormData()
+    for (const [name, val] of deleteTarget.value.pkValues) {
+        if (isNull(val)) {
+            deleteError.value = 'Rows with a NULL primary key can\u2019t be targeted safely.'
+            deleting.value = false
+            return
+        }
+        body.append('pk_' + name, val)
+    }
+
+    try {
+        const url = `${apiBase.value}/tables/${encodeURIComponent(selectedTable.value)}/rows`
+        const res = await axios.delete(url, { data: body })
+        if (res.data.error) { deleteError.value = res.data.error; return }
+        const idDesc = deleteTarget.value.pkValues.map(([n, v]) => `${n}=${isNull(v) ? 'NULL' : v}`).join(', ')
+        showToast(`Deleted row from ${selectedTable.value} (${idDesc}).`)
+        cancelDelete()
+        await loadTableData()
+    } catch (err) {
+        deleteError.value = apiError(err, 'Delete failed — the row is targeted by its primary key, check the values.')
+    } finally {
+        deleting.value = false
     }
 }
 </script>
@@ -409,7 +690,54 @@ async function saveRow() {
 }
 
 .error-msg { font-size: 13px; color: $c-od-danger; }
-.notice-msg { font-size: 13px; color: $c-od-success; }
+
+/* ---- confirmation toast ---- */
+.toast {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 420px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    border: 1px solid transparent;
+
+    .toast-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+        color: #fff;
+    }
+
+    &.toast-success {
+        background: $c-od-surface-hi;
+        border-color: $c-od-success;
+        color: $c-od-fg;
+        .toast-icon { background: $c-od-success; }
+    }
+
+    &.toast-error {
+        background: $c-od-surface-hi;
+        border-color: $c-od-danger;
+        color: $c-od-fg;
+        .toast-icon { background: $c-od-danger; }
+    }
+}
+
+.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(8px); }
 .muted { color: $c-od-muted; }
 .small { font-size: 12px; }
 .empty { font-size: 14px; color: $c-od-muted; }
@@ -536,15 +864,17 @@ async function saveRow() {
             text-overflow: ellipsis;
             background: $c-od-surface;
             color: $c-od-fg;
+            cursor: pointer;
+        }
 
-            &:hover {
-                white-space: normal;
-                overflow: visible;
-                max-width: none;
-                position: relative;
-                z-index: 2;
-                box-shadow: 0 0 0 1px $c-od-accent;
-            }
+        /* cells expand only after the row is clicked (no hover-expand) */
+        tbody tr.expanded td.cell {
+            white-space: normal;
+            overflow: visible;
+            max-width: none;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 0 0 1px $c-od-accent;
         }
 
         .null-val {
@@ -607,6 +937,35 @@ async function saveRow() {
 
     &:hover:not(:disabled) { background: $c-od-surface-hi; color: $c-od-fg; }
     &:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    &.btn-danger:hover:not(:disabled) { border-color: $c-od-danger; color: $c-od-danger; }
+}
+
+.btn-danger-solid {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: $c-od-danger;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover { opacity: 0.9; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.pk-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+
+    .pk-val { color: $c-od-accent; font-family: monospace; }
 }
 
 /* ---- row edit/add form ---- */
@@ -656,6 +1015,19 @@ async function saveRow() {
 
                 &:focus { border-color: $c-od-accent; outline: none; }
                 &:read-only { opacity: 0.6; }
+            }
+
+            .field-error {
+                margin: 0;
+                font-size: 11px;
+                color: $c-od-danger;
+            }
+        }
+
+        .field-invalid {
+            input, textarea {
+                border-color: $c-od-danger;
+                background: rgba(255, 90, 90, 0.06);
             }
         }
     }

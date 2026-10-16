@@ -56,6 +56,7 @@ func (s *server) bindRoutes() {
 		"GET  /api/accounts/{account}/databases/{db}/tables/{table}":       s.handleDbTableData(),
 		"POST /api/accounts/{account}/databases/{db}/tables/{table}/rows":  s.handleDbInsertRow(),
 		"PUT  /api/accounts/{account}/databases/{db}/tables/{table}/rows":  s.handleDbUpdateRow(),
+		"DELETE /api/accounts/{account}/databases/{db}/tables/{table}/rows": s.handleDbDeleteRow(),
 	}
 
 	for path, handler := range protectedRoutes {

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/open-function-computers-llc/server-run-inertia/account"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -23,6 +24,7 @@ const (
 type columnMeta struct {
 	Name          string `json:"name"`
 	DataType      string `json:"type"`
+	ColumnType    string `json:"columnType"`
 	Nullable      bool   `json:"nullable"`
 	IsPK          bool   `json:"isPk"`
 	AutoIncrement bool   `json:"autoIncrement"`
@@ -33,7 +35,23 @@ type columnMeta struct {
 // security boundary for the whole database-admin feature: an operator can
 // never reach a database that isn't listed in the account's settings.json.
 func (s *server) openDBForAccount(accountName, dbName string) (*sql.DB, error) {
-	a, err := s.findAccount(accountName)
+	// The account must be registered with this server (boot snapshot) — the
+	// page routes list accounts from disk, but only registered ones are
+	// reachable here. We then re-read settings.json via account.Find so
+	// freshly-added databases work without a server restart; the security
+	// rule (db must be listed in the account's settings.json) is unchanged.
+	registered := false
+	for _, a := range s.accounts {
+		if a.Name == accountName {
+			registered = true
+			break
+		}
+	}
+	if !registered {
+		return nil, fmt.Errorf("account %q is not registered with this server", accountName)
+	}
+
+	a, err := account.Find(accountName)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +78,7 @@ func (s *server) openDBForAccount(accountName, dbName string) (*sql.DB, error) {
 // given schema. An empty slice means the table doesn't exist in this schema.
 func fetchColumnInfo(conn *sql.DB, ctx context.Context, schema, table string) ([]columnMeta, error) {
 	rows, err := conn.QueryContext(ctx,
-		"SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_KEY, EXTRA "+
+		"SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_KEY, EXTRA, COLUMN_TYPE "+
 			"FROM information_schema.COLUMNS "+
 			"WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? "+
 			"ORDER BY ORDINAL_POSITION", schema, table)
@@ -71,13 +89,14 @@ func fetchColumnInfo(conn *sql.DB, ctx context.Context, schema, table string) ([
 
 	cols := []columnMeta{}
 	for rows.Next() {
-		var name, dataType, nullable, key, extra string
-		if err := rows.Scan(&name, &dataType, &nullable, &key, &extra); err != nil {
+		var name, dataType, nullable, key, extra, columnType string
+		if err := rows.Scan(&name, &dataType, &nullable, &key, &extra, &columnType); err != nil {
 			return nil, err
 		}
 		cols = append(cols, columnMeta{
 			Name:          name,
 			DataType:      dataType,
+			ColumnType:    columnType,
 			Nullable:      strings.EqualFold(nullable, "YES"),
 			IsPK:          strings.EqualFold(key, "PRI"),
 			AutoIncrement: strings.Contains(strings.ToLower(extra), "auto_increment"),
@@ -534,6 +553,109 @@ func (s *server) handleDbUpdateRow() http.HandlerFunc {
 		}
 
 		s.logger.Info(fmt.Sprintf("db-admin: UPDATE %s.%s (account %s): %s",
+			dbName, table, accountName, query))
+
+		sendJSON(w, map[string]any{"message": msg})
+	}
+}
+
+// handleDbDeleteRow deletes exactly one row, identified by its full primary
+// key (same identity rule as the update handler). WHERE is built only from
+// pk_<name> form fields validated against information_schema; all values bind
+// as ? parameters. Tables without a PK are refused — there is no safe way to
+// target a single row.
+// DELETE /api/accounts/{account}/databases/{db}/tables/{table}/rows
+//
+//	multipart form fields: pk_<name>=value...
+func (s *server) handleDbDeleteRow() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		accountName := r.PathValue("account")
+		dbName := r.PathValue("db")
+		table := r.PathValue("table")
+
+		if accountName == "" || dbName == "" || table == "" {
+			sendJSONError(w, http.StatusBadRequest, map[string]string{
+				"error": "account, db and table are required",
+			})
+			return
+		}
+
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			sendJSONError(w, http.StatusBadRequest, map[string]string{
+				"error": "invalid form body: " + err.Error(),
+			})
+			return
+		}
+
+		conn, err := s.openDBForAccount(accountName, dbName)
+		if err != nil {
+			sendJSONError(w, http.StatusUnauthorized, map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
+		defer conn.Close()
+
+		ctx := r.Context()
+
+		cols, err := fetchColumnInfo(conn, ctx, dbName, table)
+		if err != nil {
+			sendJSONError(w, http.StatusInternalServerError, map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
+		if len(cols) == 0 {
+			sendJSONError(w, http.StatusNotFound, map[string]string{
+				"error": "Table not found in this database",
+			})
+			return
+		}
+
+		pks := []string{}
+		for _, c := range cols {
+			if c.IsPK {
+				pks = append(pks, c.Name)
+			}
+		}
+		if len(pks) == 0 {
+			sendJSONError(w, http.StatusBadRequest, map[string]string{
+				"error": "This table has no primary key, so individual rows can't be safely deleted. Add a primary key to enable deleting.",
+			})
+			return
+		}
+
+		whereParts := []string{}
+		args := []any{}
+		for _, pk := range pks {
+			if _, ok := r.PostForm["pk_"+pk]; !ok {
+				sendJSONError(w, http.StatusBadRequest, map[string]string{
+					"error": "missing primary key value for column " + pk,
+				})
+				return
+			}
+			whereParts = append(whereParts, quoteIdentifier(pk)+" = ?")
+			args = append(args, r.PostFormValue("pk_"+pk))
+		}
+
+		query := fmt.Sprintf("DELETE FROM `%s` WHERE %s",
+			table,
+			strings.Join(whereParts, " AND "))
+
+		res, err := conn.ExecContext(ctx, query, args...)
+		if err != nil {
+			sendJSONError(w, http.StatusBadRequest, map[string]string{
+				"error": "Error deleting row: " + err.Error(),
+			})
+			return
+		}
+		affected, _ := res.RowsAffected()
+		msg := fmt.Sprintf("Deleted %d row(s)", affected)
+		if affected == 0 {
+			msg = "No rows matched the primary key — the row may have been deleted already"
+		}
+
+		s.logger.Info(fmt.Sprintf("db-admin: DELETE %s.%s (account %s): %s",
 			dbName, table, accountName, query))
 
 		sendJSON(w, map[string]any{"message": msg})
