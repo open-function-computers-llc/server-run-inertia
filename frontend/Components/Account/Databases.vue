@@ -109,8 +109,8 @@
                     <input
                         v-if="!isLongText(f)"
                         :id="'f-' + f.name"
-                        :type="inputType(f)"
-                        :step="inputStep(f)"
+                        :type="inputType()"
+                        :placeholder="inputPlaceholder(f)"
                         v-model="f.value"
                         :readonly="(formMode === 'edit' && f.isPk) || (formMode === 'add' && f.autoIncrement)" />
                     <textarea
@@ -289,41 +289,54 @@ function formatCell(val) {
 
 const longTypes = ['text', 'tinytext', 'mediumtext', 'longtext', 'json', 'blob', 'tinyblob', 'mediumblob', 'longblob']
 
-// Numeric columns deliberately use type="text", NOT type="number": with
-// type="number" the browser reports an invalid entry (e.g. "abc") as an empty
-// string, the server then maps empty->NULL for nullable columns, and the
-// user's typo silently wipes the value. type="text" preserves what was typed
-// so validateFields() can reject it with a real message.
-function inputType(col) {
-    const t = (col.type || '').toLowerCase()
-    if (t === 'date') return 'date'
-    if (t === 'time') return 'time'
-    if (t === 'datetime' || t === 'timestamp') return 'datetime-local'
+// Every column renders as type="text" and is validated by validateValue()
+// against the declared column type. Native type="number"/"date"/"time"/
+// "datetime-local" are deliberately NOT used: on an invalid entry the browser
+// reports an empty string, so the server sees "" and maps it to NULL for
+// nullable columns — the user's typo silently wipes the value with no error
+// (verified: "25:99" in a TIME column and "abc" in an INT column both saved
+// NULL). type="text" keeps what was typed so it can be rejected with a real
+// message, and the placeholder shows the expected format.
+function inputType() {
     return 'text'
 }
 
-// step for <input type=datetime-local>; decimals get their declared scale.
-function inputStep(col) {
+function inputPlaceholder(col) {
     const t = (col.type || '').toLowerCase()
-    if (t === 'datetime' || t === 'timestamp') return '1'
-    return null
+    if (t === 'date') return 'YYYY-MM-DD'
+    if (t === 'time') return 'HH:MM:SS'
+    if (t === 'datetime' || t === 'timestamp') return 'YYYY-MM-DD HH:MM:SS'
+    if (t === 'enum') {
+        const allowed = [...(col.columnType || '').matchAll(/'([^']*)'/g)].map((m) => m[1])
+        if (allowed.length) return allowed.join(' | ')
+    }
+    if (t === 'set') return 'comma-separated: x, y, z'
+    return ''
 }
 
 function isLongText(col) {
     return longTypes.includes((col.type || '').toLowerCase())
 }
 
-// datetime values arrive as RFC3339 (parseTime=true); <input type=datetime-local>
-// wants "YYYY-MM-DDTHH:MM:SS" in local time.
+// The server returns DATE/DATETIME/TIME as MySQL's own canonical text (see
+// openDBForAccount: parseTime is off), so these are treated as plain strings.
+// Never new Date() them: that applies timezone math to values that have no
+// timezone and silently shifts a date on save.
 function toInputValue(col, val) {
     if (isNull(val)) return ''
     const t = (col.type || '').toLowerCase()
     if (t === 'datetime' || t === 'timestamp') {
-        const d = new Date(val)
-        if (!isNaN(d)) {
-            const pad = (n) => String(n).padStart(2, '0')
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-        }
+        // MySQL canonical "YYYY-MM-DD HH:MM:SS[.ffffff]"; drop any timezone
+        // suffix the driver may have appended and keep the value as written.
+        return String(val).trim().slice(0, 26)
+    }
+    if (t === 'date') {
+        return String(val).trim().slice(0, 10)
+    }
+    if (t === 'time') {
+        // keep HH:MM:SS (or fractional), dropping any trailing junk
+        const m = String(val).trim().match(/^([+-]?\d{1,3}:\d{2}(?::\d{2}(?:\.\d+)?)?)/)
+        return m ? m[1] : String(val).trim()
     }
     return String(val)
 }
@@ -396,11 +409,14 @@ function validateValue(col, value) {
         const r = intRanges[t.base]
         if (t.unsigned && trimmed.startsWith('-')) return `${t.raw} cannot be negative (unsigned).`
         // BigInt throughout: Number() would lose precision near the bigint bounds.
+        // Unsigned max is 2*signedMax+1 (e.g. tinyint: 127 -> 255), NOT the signed
+        // max — using the signed bound would block legitimate high values.
         let big, min, max
         try {
             big = BigInt(trimmed)
+            const signedMax = BigInt(r.max)
             min = BigInt(t.unsigned ? 0 : r.min)
-            max = BigInt(t.unsigned ? r.max : r.max)
+            max = t.unsigned ? signedMax * 2n + 1n : signedMax
         } catch (e) { return `Must be a whole number (${t.raw}).` }
         if (big < min || big > max) return `Out of range for ${t.raw} (${min} to ${max}).`
         return null
@@ -456,7 +472,14 @@ function validateValue(col, value) {
     }
 
     if (t.base === 'time') {
-        if (!/^([+-])?\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(trimmed)) return 'Use a valid time, HH:MM or HH:MM:SS.'
+        // MySQL TIME spans -838:59:59 to 838:59:59, so hours may exceed 24 but
+        // minutes and seconds must still be 0-59 (digit-count alone let "25:99" through).
+        const m = trimmed.match(/^([+-])?(\d{1,3}):(\d{1,2})(:(\d{1,2})(\.\d+)?)?$/)
+        if (!m) return 'Use a valid time, HH:MM or HH:MM:SS.'
+        const [, , hh, mi, , ss] = m
+        if (+mi > 59) return `TIME minutes must be 0-59 (got ${mi}).`
+        if (ss !== undefined && +ss > 59) return `TIME seconds must be 0-59 (got ${ss}).`
+        if (+hh > 838) return 'TIME hours must be 0-838.'
         return null
     }
 

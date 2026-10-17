@@ -57,7 +57,16 @@ func (s *server) openDBForAccount(accountName, dbName string) (*sql.DB, error) {
 	}
 	for _, db := range a.Databases {
 		if db.Name == dbName {
-			dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&timeout=10s&readTimeout=10s",
+			// parseTime is deliberately OFF. With it on, the driver turns
+			// DATE/DATETIME/TIME into time.Time, which JSON-marshals as RFC3339
+			// with a bogus Z ("2024-03-15T00:00:00Z"); the client would then do
+			// timezone math on a value that has no timezone, shifting it on save,
+			// and MySQL TIME values outside 00:00:00-23:59:59 cannot round-trip
+			// at all. Left off, the driver returns these as []byte holding MySQL's
+			// own canonical text ("2024-03-15", "08:30:00", "2024-03-15 00:00:00"),
+			// which normalizeRowValues turns into plain strings, so what the UI
+			// reads is exactly what it writes back — no reinterpretation.
+			dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?timeout=10s&readTimeout=10s",
 				db.Username, db.Password, db.Host, db.Name)
 			conn, err := sql.Open("mysql", dsn)
 			if err != nil {
