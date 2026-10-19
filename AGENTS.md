@@ -151,16 +151,41 @@ Backend `server/handleDatabases.go`; routes under `protectedRoutes` in
 - Gotchas baked in — do not regress:
   - Driver returns `[]byte` for BLOB/some TEXT → `normalizeRowValues` converts
     to string, else the UI shows base64 garbage.
-  - `parseTime=true` in the DSN → datetimes arrive as RFC3339; the Vue form
-    converts to `datetime-local` format.
+  - **`parseTime` is deliberately OFF in the DSN.** With it on, the driver turns
+    DATE/DATETIME/TIME into `time.Time`, which JSON-marshals as RFC3339 with a
+    bogus `Z` (`"2024-03-15T00:00:00Z"`); the client then does `new Date()`
+    timezone math on a value that has no timezone and shifts it on save, and
+    TIME values outside 00:00:00–23:59:59 can't round-trip at all. Left off, the
+    driver hands back MySQL's own canonical text (`"08:30:00"`,
+    `"2024-03-15 00:00:00"`) which `normalizeRowValues` makes plain strings, so
+    the UI writes back exactly what it read. `toInputValue` treats these as
+    strings — never reintroduce `new Date()` there.
   - `fetchColumnInfo` also selects **`COLUMN_TYPE`** — the client needs it for
     varchar length, decimal scale and enum members (unknowable from DATA_TYPE).
-  - Numeric inputs are `type="text"` + explicit validation, **not**
-    `type="number"`: the browser reports invalid input as `""`, which the server
-    maps to NULL for nullable columns, silently wiping the value with no error.
-    Empty means NULL only where the column allows it; NOT NULL rejects empty
-    rather than letting MySQL's non-strict mode insert `0`/`''`. The server
-    remains the authority; client validation only stops obvious mistakes.
+  - **EVERY form field renders as `type="text"`** (plus `<textarea>` for
+    text/blob/json), validated by `validateValue()` against `COLUMN_TYPE`.
+    Native typed inputs — `type="number"` AND `type="date"`/`"time"`/
+    `"datetime-local"` — are banned here: on an unparseable entry the browser
+    reports `""`, the server maps `""` to NULL for nullable columns, and the
+    typo silently wipes the stored value with no error (verified live: `"abc"`
+    into an INT and `"25:99"` into a TIME both saved NULL). Fixing only the
+    numeric case leaves date/time wide open — it is the same flaw. Expected
+    format lives in the `placeholder` instead (enum columns list their allowed
+    values there). Empty means NULL only where the column allows it; NOT NULL
+    rejects empty rather than letting MySQL's non-strict mode insert `0`/`''`.
+    The server remains the authority; client validation only stops obvious
+    mistakes.
+  - Validation constants that are easy to get wrong: unsigned max is
+    `2*signedMax+1` (tinyint unsigned = 255, **not** the signed 127 — reusing
+    the signed bound blocks legitimate writes); MySQL TIME spans
+    −838:59:59..838:59:59 so hours may exceed 24 but minutes/seconds must still
+    be 0–59 (a digit-count-only regex let `"25:99"` through); use `BigInt` for
+    range checks so bigint bounds don't lose precision.
+  - MariaDB backs JSON with `longtext` + a CHECK constraint, so
+    `information_schema` reports `longtext` and the client cannot know a column
+    is JSON: bad JSON is rejected **server-side** (`Error 4025 ... CONSTRAINT
+    ... failed`) with the typed value intact. That is the correct outcome —
+    fail loudly, never blank a value.
   - Add-mode: only **auto-increment** columns are readonly/skipped. A plain
     (non-auto-inc) PK IS user-entered — skipping all PKs breaks tables like
     `nullable_test(id NOT NULL, no AI)` with MySQL error 1364. Edit-mode locks
@@ -183,6 +208,19 @@ real browser: fill `#username`/`#password`, click Sign in, goto
 fixture columns that actually match the case (checking a NOT NULL rejection on a
 nullable column passes for the wrong reason), and clean up junk rows through the
 feature under test.
+- `validateValue`/`parseColumnType` are pure — test them as a truth table in
+  node (extract the block from the SFC, `[label, column, value, 'ok'|'err']`)
+  rather than clicking the modal dozens of times. Cover BOTH directions: false
+  positives that block legitimate data (255 into tinyint unsigned) only surface
+  in the `'ok'` rows. Then spot-check the shipped bundle in a browser.
+- "No error shown for field X" is NOT proof X passed — a different invalid field
+  can block the save while you read only X's error. Prove a verdict with
+  modal-still-open + ALL `.field-error`s + the server log (a real write logs
+  `db-admin: UPDATE ...`) + a direct `mysql` SELECT. Saving with a valid value
+  performs a REAL write, so restore any fixture row you clobber.
+- Save blocked with zero visible field errors usually means a server-side error
+  landed in the form-level message — dump `.row-form` innerText before assuming
+  the client logic is wrong.
 
 ## Conventions / gotchas (general)
 - Handlers are `func (s *server) handleX() http.HandlerFunc` closures (`server`
