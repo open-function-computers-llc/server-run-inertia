@@ -501,10 +501,16 @@ function validateValue(col, value) {
 
 function validateFields() {
     const errs = {}
+    const editing = formMode.value === 'edit'
     for (const f of formFields.value) {
         // server-managed columns are not validated
         if (formMode.value === 'add' && f.autoIncrement) continue
-        if (formMode.value === 'edit' && f.isPk) continue
+        if (editing && f.isPk) continue
+        // On update, only the fields that will actually be sent are validated.
+        // An untouched column is omitted from the SET clause entirely, so a
+        // stored value the UI cannot represent (a legacy '0000-00-00' date, a
+        // binary blob) must not block an unrelated edit to some other column.
+        if (editing && String(f.value ?? '') === String(f.original ?? '')) continue
         const msg = validateValue(f, f.value)
         if (msg && msg !== EMPTY_OK) errs[f.name] = msg
     }
@@ -518,6 +524,9 @@ function buildFormFields(rowValues) {
     return tableData.value.columnInfo.map((col, i) => ({
         ...col,
         value: rowValues ? toInputValue(col, rowValues[i]) : '',
+        // Baseline the row was opened with, so saveRow() can tell which fields
+        // the user actually changed and send ONLY those.
+        original: rowValues ? toInputValue(col, rowValues[i]) : '',
     }))
 }
 
@@ -570,17 +579,35 @@ async function saveRow() {
     // Build the multipart body the server expects: col_<name> (and pk_<name>
     // on updates). Server whitelists column names against information_schema
     // and binds every value as a ? parameter.
+    //
+    // On UPDATE we send ONLY the fields the user actually changed. The server
+    // builds its SET clause purely from the col_* fields that arrive, so any
+    // column we omit is left completely untouched in the row — including
+    // columns the grid may have rendered lossily (binary, long text) and
+    // ON UPDATE CURRENT_TIMESTAMP / generated columns, which a blind
+    // full-row rewrite would clobber or churn. startEdit baselines `original`
+    // from the row it just loaded, so an unmodified field is provably equal to
+    // what is stored and is safe to omit. INSERT still sends every field.
     const body = new FormData()
+    const changed = []
     for (const f of formFields.value) {
         if (formMode.value === 'add') {
             if (f.autoIncrement) continue           // server-assigned
             if (f.isPk && f.value === '') continue  // let MySQL default/assign the PK
+            body.append('col_' + f.name, f.value ?? '')
         } else {
             if (f.isPk) continue                    // PK identifies the row; not editable
+            if (String(f.value ?? '') === String(f.original ?? '')) continue
+            body.append('col_' + f.name, f.value ?? '')
+            changed.push(f.name)
         }
-        body.append('col_' + f.name, f.value ?? '')
     }
     if (formMode.value === 'edit') {
+        if (changed.length === 0) {
+            saving.value = false
+            formError.value = 'Nothing to save — no fields were changed.'
+            return
+        }
         for (const [pk, val] of Object.entries(editingPK.value)) {
             body.append('pk_' + pk, val)
         }
