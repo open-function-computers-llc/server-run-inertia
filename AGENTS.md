@@ -143,6 +143,19 @@ Backend `server/handleDatabases.go`; routes under `protectedRoutes` in
   (limit clamped 1–5000; server builds the SELECT itself — no arbitrary SQL),
   `POST .../tables/{table}/rows` (insert), `PUT` (update by full PK), `DELETE`
   (delete by full PK; tables without a PK are refused).
+- **UPDATE rewrites ONLY the columns you changed.** The server builds its SET
+  clause purely from the `col_*` fields that arrive, so a column the client
+  omits is never written; `Databases.vue` therefore sends only fields whose
+  value differs from the `original` baseline captured in `startEdit` (INSERT
+  still sends everything, and an edit that changes nothing sends nothing and is
+  refused with "Nothing to save — no fields were changed."). This is deliberate:
+  a blind full-row rewrite silently reverts concurrent edits by others
+  (lost-update), re-applies lossy round-trips of binary/long-text values, and
+  needlessly churns `ON UPDATE CURRENT_TIMESTAMP` and generated columns.
+  `validateFields()` matches this and skips untouched columns, so a stored value
+  the UI cannot represent (legacy `0000-00-00`, a blob) cannot block an unrelated
+  edit. Verified by mutating a column directly in MySQL *while the edit modal was
+  open* and confirming the save left it intact.
 - **Safety by construction**: identifiers validated against
   `information_schema.COLUMNS` then backtick-quoted; user input arrives ONLY as
   `?`-bound parameters. Form convention: `col_<name>=value` for SET/VALUES,
