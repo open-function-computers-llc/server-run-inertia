@@ -171,7 +171,6 @@
         <div class="row-form">
             <div class="form-head">
                 <h3>Delete row from <span class="table-title">{{ selectedTable }}</span>?</h3>
-                <button class="btn-ghost" @click="cancelDelete">✕ Close</button>
             </div>
             <p class="muted small">This permanently removes the row identified by:</p>
             <ul class="pk-list">
@@ -192,7 +191,6 @@
         <div class="row-form">
             <div class="form-head">
                 <h3>Delete {{ bulkDeleteTargets.length }} row(s) from <span class="table-title">{{ selectedTable }}</span>?</h3>
-                <button class="btn-ghost" @click="cancelBulkDelete">✕ Close</button>
             </div>
             <p class="muted small">This permanently removes every row listed below. This cannot be undone.</p>
             <ul class="pk-list pk-list-bulk">
