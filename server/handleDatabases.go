@@ -755,7 +755,11 @@ func (s *server) handleDbDeleteRow() http.HandlerFunc {
 		s.logger.Info(fmt.Sprintf("db-admin: DELETE %s.%s (account %s): %s",
 			dbName, table, accountName, query))
 
-		sendJSON(w, map[string]any{"message": msg})
+		// `affected` is returned as data, not only prose: a 0-row delete is a
+		// *failure to delete*, and callers (the bulk-delete UI) must be able
+		// to tell that apart from a real deletion instead of parsing the
+		// message string.
+		sendJSON(w, map[string]any{"message": msg, "affected": affected})
 	}
 }
 

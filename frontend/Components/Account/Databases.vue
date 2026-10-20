@@ -421,7 +421,9 @@ async function confirmBulkDelete() {
     deleting.value = true
     deleteError.value = ''
     const url = `${apiBase.value}/tables/${encodeURIComponent(selectedTable.value)}/rows`
-    const failed = []
+    // reasons keyed by pk-key so the survivors are identifiable without
+    // string-matching the messages (a PK value could contain any text).
+    const failures = new Map()   // pkKey -> reason
     let deleted = 0
     try {
         // One request per row: the DELETE endpoint addresses a single row by
@@ -429,28 +431,41 @@ async function confirmBulkDelete() {
         // already-deleted row cannot roll back or mask the rest. Results are
         // summarized in one toast.
         for (const pkValues of bulkDeleteTargets.value) {
+            const key = pkKeyOfPkValues(pkValues)
             const body = new FormData()
             for (const [name, val] of pkValues) body.append('pk_' + name, val)
             try {
                 const res = await axios.delete(url, { data: body })
-                if (res.data.error) failed.push(pkValues.map(([n, v]) => `${n}=${v}`).join(', '))
-                else deleted += 1
+                if (res.data.error) {
+                    failures.set(key, res.data.error)
+                } else if (res.data.affected === 0) {
+                    // A 0-row DELETE is NOT a success: the row was already
+                    // gone (or the PK never matched). Counting it as deleted
+                    // would report "Deleted 1 row(s)" having deleted
+                    // nothing, so treat it as this row's failure reason.
+                    failures.set(key, res.data.message || 'No rows matched the primary key')
+                } else {
+                    deleted += 1
+                }
             } catch (err) {
-                failed.push(pkValues.map(([n, v]) => `${n}=${v}`).join(', '))
+                failures.set(key, apiError(err, 'delete failed'))
             }
         }
         if (deleted > 0) {
             showToast(`Deleted ${deleted} row(s) from ${selectedTable.value}.`)
         }
-        if (failed.length > 0) {
-            deleteError.value = `${failed.length} row(s) could not be deleted: ${failed.join('; ')}`
-            // keep the modal open with only the failures selected for retry
-            const keep = new Set()
-            for (const pkValues of bulkDeleteTargets.value) {
-                const desc = pkValues.map(([n, v]) => `${n}=${v}`).join(', ')
-                if (failed.includes(desc)) keep.add(pkKeyOfPkValues(pkValues))
-            }
-            selectedKeys.value = keep
+        if (failures.size > 0) {
+            const first = [...failures.values()][0]
+            deleteError.value = failures.size === 1
+                ? `1 row could not be deleted: ${first}`
+                : `${failures.size} rows could not be deleted (first: ${first})`
+            // Narrow BOTH the confirmation list and the selection to the
+            // failures only, so a retry targets exactly what is left and the
+            // header count can't claim "Delete 2 row(s)" when one is already
+            // gone.
+            bulkDeleteTargets.value = bulkDeleteTargets.value.filter(
+                (pkValues) => failures.has(pkKeyOfPkValues(pkValues)))
+            selectedKeys.value = new Set(failures.keys())
         } else {
             cancelBulkDelete()
             clearSelection()
@@ -964,6 +979,12 @@ async function confirmDelete() {
         const url = `${apiBase.value}/tables/${encodeURIComponent(selectedTable.value)}/rows`
         const res = await axios.delete(url, { data: body })
         if (res.data.error) { deleteError.value = res.data.error; return }
+        if (res.data.affected === 0) {
+            // row already gone (or PK never matched) — that is NOT a delete,
+            // so do not claim one; keep the modal open with the reason.
+            deleteError.value = res.data.message || 'No rows matched the primary key.'
+            return
+        }
         const idDesc = deleteTarget.value.pkValues.map(([n, v]) => `${n}=${isNull(v) ? 'NULL' : v}`).join(', ')
         showToast(`Deleted row from ${selectedTable.value} (${idDesc}).`)
         // drop it from any selection so a re-inserted row with the same PK
