@@ -13,8 +13,8 @@
 
         <div v-if="selectedTable" class="toolbar-actions">
             <label class="limit-label" for="row-limit">Rows</label>
-            <input id="row-limit" type="number" v-model.number="rowLimit" min="1" @keyup.enter="loadTableData" />
-            <button class="btn-ghost" @click="loadTableData" :disabled="loading">Apply</button>
+            <input id="row-limit" type="number" v-model.number="rowLimit" min="1" @keyup.enter="applyLimit" />
+            <button class="btn-ghost" @click="applyLimit" :disabled="loading">Apply</button>
             <button class="btn-ghost" @click="loadTableData" :disabled="loading">Refresh</button>
             <button class="btn-primary" @click="startAdd" :disabled="!tableData">+ Add row</button>
         </div>
@@ -53,7 +53,7 @@
             <template v-else-if="tableData && selectedTable">
                 <div class="viewer-head">
                     <span class="table-title">{{ selectedTable }}</span>
-                    <span class="muted small">{{ tableData.rows.length }} row(s){{ hasMoreRows ? ' (limit reached — raise Rows to see more)' : '' }}</span>
+                    <span class="muted small">{{ rangeText }}</span>
                     <span v-if="!hasPK" class="pk-warning">no primary key — rows are view-only for this table</span>
                 </div>
                 <div class="table-scroll">
@@ -84,6 +84,13 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div v-if="pageCount > 1" class="pager">
+                    <button class="btn-ghost" :disabled="page <= 1" @click="gotoPage(1)">«</button>
+                    <button class="btn-ghost" :disabled="page <= 1" @click="gotoPage(page - 1)">‹ Prev</button>
+                    <span class="muted small">page {{ page }} of {{ pageCount }}</span>
+                    <button class="btn-ghost" :disabled="page >= pageCount" @click="gotoPage(page + 1)">Next ›</button>
+                    <button class="btn-ghost" :disabled="page >= pageCount" @click="gotoPage(pageCount)">»</button>
                 </div>
             </template>
             <p v-else-if="!selectedTable" class="muted">Select a table to browse its data.</p>
@@ -199,6 +206,38 @@ const deleting = ref(false)
 const deleteTarget = ref(null)      // { pkValues: [[name, value], ...] } | null
 const deleteError = ref('')
 
+// ---------- pagination ----------
+// Rows are fetched one page at a time (server LIMIT/OFFSET) so tables larger
+// than the Rows limit stay reachable. `page` is 1-based; offset is derived.
+const page = ref(1)
+
+const totalRows = computed(() => (tableData.value ? Number(tableData.value.totalRows ?? tableData.value.rows.length) : 0))
+const pageCount = computed(() => {
+    const size = Number(tableData.value?.limit) || rowLimit.value || 100
+    return Math.max(1, Math.ceil(totalRows.value / size))
+})
+const rangeText = computed(() => {
+    if (!tableData.value) return ''
+    const total = totalRows.value
+    const shown = tableData.value.rows.length
+    if (total === 0) return '0 rows'
+    const first = (page.value - 1) * (Number(tableData.value.limit) || shown) + 1
+    const last = first + shown - 1
+    return `rows ${first}–${last} of ${total}`
+})
+
+function gotoPage(p) {
+    const target = Math.min(Math.max(1, p), pageCount.value)
+    if (target === page.value) return
+    page.value = target
+    loadTableData()
+}
+
+function applyLimit() {
+    page.value = 1
+    loadTableData()
+}
+
 function toggleRowExpand(ri) {
     expandedRow.value = expandedRow.value === ri ? null : ri
 }
@@ -206,7 +245,6 @@ function toggleRowExpand(ri) {
 const apiBase = computed(() => `/api/accounts/${encodeURIComponent(props.account.name)}/databases/${encodeURIComponent(selectedDb.value)}`)
 
 const hasPK = computed(() => !!(tableData.value && tableData.value.primaryKey && tableData.value.primaryKey.length))
-const hasMoreRows = computed(() => !!(tableData.value && tableData.value.rows.length === tableData.value.limit))
 
 function isPkColumn(name) {
     return !!(tableData.value && tableData.value.primaryKey?.includes(name))
@@ -244,6 +282,7 @@ function selectTable(t) {
     selectedTable.value = t.name
     error.value = ''
     expandedRow.value = null
+    page.value = 1
     cancelForm()
     loadTableData()
 }
@@ -254,11 +293,20 @@ async function loadTableData() {
     error.value = ''
     expandedRow.value = null
     try {
-        const res = await axios.get(`${apiBase.value}/tables/${encodeURIComponent(selectedTable.value)}`, {
-            params: { limit: rowLimit.value || 100 }
-        })
+        const params = {
+            limit: rowLimit.value || 100,
+            offset: (page.value - 1) * (rowLimit.value || 100),
+        }
+        const res = await axios.get(`${apiBase.value}/tables/${encodeURIComponent(selectedTable.value)}`, { params })
         if (res.data.error) { error.value = res.data.error; return }
         tableData.value = res.data
+        // A delete (here or elsewhere) can empty the current page; clamp back
+        // into range instead of stranding the user on "page 7 of 6".
+        if (tableData.value.rows.length === 0 && page.value > 1 && totalRows.value > 0 && page.value > pageCount.value) {
+            page.value = pageCount.value
+            loading.value = false
+            return loadTableData()
+        }
     } catch (err) {
         tableData.value = null
         error.value = apiError(err, 'Could not load table data.')
@@ -945,6 +993,14 @@ async function confirmDelete() {
 
         tbody tr:hover td.cell { background: $c-od-surface-hi; }
     }
+}
+
+/* ---- pagination ---- */
+.pager {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
 }
 
 /* ---- buttons ---- */

@@ -192,16 +192,18 @@ func (s *server) handleDbTables() http.HandlerFunc {
 }
 
 // handleDbTableData returns the columns, per-column metadata, primary key
-// columns, and up to `limit` rows for a single table. The server builds the
-// SELECT itself (it never concatenates client input into the query), so this
-// handler is structurally read-only and immune to SQL injection.
-// GET /api/accounts/{account}/databases/{db}/tables/{table}?limit=N
+// columns, one LIMIT/OFFSET page of rows, and the exact row total for a
+// single table. The server builds the SELECT itself (it never concatenates
+// client input into the query), so this handler is structurally read-only and
+// immune to SQL injection.
+// GET /api/accounts/{account}/databases/{db}/tables/{table}?limit=N&offset=M
 func (s *server) handleDbTableData() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		accountName := r.PathValue("account")
 		dbName := r.PathValue("db")
 		table := r.PathValue("table")
 		limitStr := r.URL.Query().Get("limit")
+		offsetStr := r.URL.Query().Get("offset")
 
 		if accountName == "" || dbName == "" || table == "" {
 			sendJSONError(w, http.StatusBadRequest, map[string]string{
@@ -223,6 +225,18 @@ func (s *server) handleDbTableData() http.HandlerFunc {
 		}
 		if limit > maxRowLimit {
 			limit = maxRowLimit
+		}
+
+		offset := 0
+		if offsetStr != "" {
+			o, err := strconv.Atoi(offsetStr)
+			if err != nil || o < 0 {
+				sendJSONError(w, http.StatusBadRequest, map[string]string{
+					"error": "`offset` must be a non-negative integer",
+				})
+				return
+			}
+			offset = o
 		}
 
 		conn, err := s.openDBForAccount(accountName, dbName)
@@ -264,10 +278,29 @@ func (s *server) handleDbTableData() http.HandlerFunc {
 		// Build the SELECT ourselves. `table` was validated to be a real
 		// table in this schema and is quoted with backticks; the column list
 		// comes from the server's own information_schema query, not the
-		// client. The LIMIT is an int clamped above. Nothing user-controlled
-		// is spliced in raw.
+		// client. LIMIT and OFFSET are ints clamped/parsed above. Nothing
+		// user-controlled is spliced in raw.
+		//
+		// ORDER BY the PK is explicit: InnoDB returns PK order for a plain
+		// SELECT in practice, but relying on unspecified behavior makes
+		// OFFSET paging able to skip or repeat rows.
 		colList := strings.Join(quoteIdentifiers(columnNames), ", ")
-		query := fmt.Sprintf("SELECT %s FROM `%s` LIMIT %d", colList, table, limit)
+		query := fmt.Sprintf("SELECT %s FROM `%s`", colList, table)
+		if len(primaryKey) > 0 {
+			query += " ORDER BY " + quoteIdentifier(primaryKey[0]) + " ASC"
+		}
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
+
+		// Exact total so the UI can page (row counts from information_schema
+		// are estimates on InnoDB and unsuitable for computing page counts).
+		var totalRows int64
+		countQuery := fmt.Sprintf("SELECT COUNT(*) FROM `%s`", table)
+		if err := conn.QueryRowContext(ctx, countQuery).Scan(&totalRows); err != nil {
+			sendJSONError(w, http.StatusInternalServerError, map[string]string{
+				"error": "Error counting rows: " + err.Error(),
+			})
+			return
+		}
 
 		dataRows, err := conn.QueryContext(ctx, query)
 		if err != nil {
@@ -315,6 +348,8 @@ func (s *server) handleDbTableData() http.HandlerFunc {
 			"columns":    rowCols,
 			"rows":       rowsOut,
 			"limit":      limit,
+			"offset":     offset,
+			"totalRows":  totalRows,
 			"columnInfo": cols,
 			"primaryKey": primaryKey,
 		})
