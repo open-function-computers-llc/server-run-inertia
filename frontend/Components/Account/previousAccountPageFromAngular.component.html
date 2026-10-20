@@ -1,0 +1,225 @@
+<a routerLink="/system/accounts">Back to all accounts</a>
+
+<ng-container *ngIf="site | async as s">
+  <div class="d-flex justify-content-between">
+    <div class="d-flex">
+      <h1>
+        <i-bs
+          name="unlock-fill"
+          width="2rem"
+          height="2rem"
+          *ngIf="!s.isLocked"
+        ></i-bs>
+        {{ s.account }}
+        <span *ngIf="s.isLocked">(locked)</span>
+        <span *ngIf="!s.isLocked">(unlocked)</span>
+      </h1>
+
+      <div class="ms-3 mt-1">
+        <button
+          (click)="unlockSite()"
+          class="btn btn-warning"
+          *ngIf="s.isLocked"
+        >
+          <i-bs name="unlock-fill"></i-bs> Unlock
+        </button>
+        <button
+          (click)="lockSite()"
+          class="btn btn-success"
+          *ngIf="!s.isLocked"
+        >
+          <i-bs name="lock-fill"></i-bs> Lock
+        </button>
+        <button (click)="cloneAccount()" class="btn btn-info ms-1">
+          <i-bs name="node-plus"></i-bs> Clone Account
+        </button>
+      </div>
+    </div>
+
+    <app-uptime
+      [uptimeURI]="s.uptimeURI"
+      [domain]="s.account"
+      class="d-flex flex-column align-items-end"
+    ></app-uptime>
+  </div>
+
+  <div>
+    <p>
+      Created:
+      {{ created(s.createdAt) }}
+    </p>
+  </div>
+
+  <div>
+    <h2>Account Actions</h2>
+  </div>
+  <select
+    class="form-select"
+    aria-label="Analytic View"
+    (change)="setDetailView($event)"
+    style="max-width: 500px"
+  >
+    <option value="showDomains">View Account Domains</option>
+    <option value="analyticChart">View Analytic Chart</option>
+    <option value="monitorLogs">Monitor Logs</option>
+    <option value="prepareForExport">Export Account</option>
+    <option value="showPubKey" *ngIf="s.sshPubKey !== ''">
+      View Account SSH Pubkey
+    </option>
+    <option value="" disabled>Dangerous stuff below...</option>
+    <option value="terminateAccount">Terminate Account</option>
+  </select>
+
+  <div *ngIf="showingChart">
+    <div class="d-flex gap-4 mt-3">
+      <div class="align-items-center d-flex gap-1">
+        <input
+          id="chart-type-total-requests"
+          value="total-requests"
+          type="radio"
+          [(ngModel)]="chartType"
+        />
+        <label for="chart-type-total-requests">Total Requests</label>
+      </div>
+
+      <div class="align-items-center d-flex gap-1">
+        <input
+          id="chart-type-unique-visitors"
+          value="unique-visitors"
+          type="radio"
+          [(ngModel)]="chartType"
+        />
+        <label for="chart-type-unique-visitors">Unique Visitors</label>
+      </div>
+
+      <div class="align-items-center d-flex gap-1">
+        <input
+          id="chart-type-bandwidth"
+          value="bandwidth"
+          type="radio"
+          [(ngModel)]="chartType"
+        />
+        <label for="chart-type-bandwidth">Bandwidth</label>
+      </div>
+    </div>
+
+    <app-chart [account]="s.account" [type]="chartType"></app-chart>
+  </div>
+
+  <div
+    class="pubkey-viewer mt-3"
+    [class]="{ copying: temporaryCopyAnimationShowing }"
+    (click)="sshPubkeyToClipboard(s.sshPubKey)"
+    *ngIf="showingPubkey"
+  >
+    {{ s.sshPubKey }}
+  </div>
+
+  <div *ngIf="showingDomains" class="my-3">
+    <h4>Domains on this account:</h4>
+    <p>
+      Primary domain:
+      <a [href]="'https://' + s.domain" target="_blank">{{ s.domain }}</a>
+    </p>
+    <h4>Additional Domains:</h4>
+    <ul class="list-group" *ngIf="s.alternateDomains.length > 0">
+      <li *ngFor="let domain of s.alternateDomains" class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>{{ domain }}</span>
+          <div class="actions">
+            <!-- <button
+              (click)="deleteAlternateDomain(domain)"
+              class="btn btn-danger"
+            >
+              Delete
+            </button> -->
+            <button
+              (click)="setAsPrimaryDomain(domain)"
+              class="btn btn-primary"
+              disabled
+            >
+              Set as primary
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+    <p *ngIf="s.alternateDomains.length === 0">No alternate domains</p>
+    <div *ngIf="isAddingDomain">
+      <div class="input-group">
+        <span class="input-group-text" id="basic-addon1">New Domain</span>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="example.com"
+          autofocus
+          [(ngModel)]="newDomain"
+          (keydown.enter)="addDomain()"
+        />
+        <button class="btn btn-success" (click)="addDomain()">
+          Add Domain
+        </button>
+      </div>
+    </div>
+    <button
+      (click)="toggleIsAddingDomain()"
+      class="btn btn-primary"
+      *ngIf="!isAddingDomain"
+    >
+      Add +
+    </button>
+    <button
+      (click)="toggleIsAddingDomain()"
+      class="btn btn-danger"
+      *ngIf="isAddingDomain"
+    >
+      Cancel
+    </button>
+    <app-script-viewer
+      *ngIf="addDomainNow"
+      script-name="addDomainToAccount"
+      [script-env]="generateAddDomainENV()"
+      (isCompleted)="onFinishedAddingDomain($event)"
+    ></app-script-viewer>
+  </div>
+
+  <div *ngIf="monitorLogs">
+    <div class="my-3">
+      <h3>Access Logs:</h3>
+      <app-script-viewer
+        [rerunable]="true"
+        script-name="log-viewer"
+        [script-arg]="generateLogArgs('access')"
+      ></app-script-viewer>
+
+      <h3>Error Logs:</h3>
+      <app-script-viewer
+        [rerunable]="true"
+        script-name="log-viewer"
+        [script-arg]="generateLogArgs('error')"
+      ></app-script-viewer>
+    </div>
+  </div>
+
+  <div *ngIf="showingExport">
+    <p>This will prepare this account to be imported into another server.</p>
+    <p>
+      That server will need to be part of this pool for the account to show up.
+      When you're sure you're ready to import this account on the new server,
+      click "Importable Accounts" on that new server once this process
+      completes.
+    </p>
+    <button class="btn btn-primary" (click)="exportAccount()">Export</button>
+
+    <app-script-viewer
+      script-name="export-account"
+      [script-env]="generateExportENV()"
+    ></app-script-viewer>
+  </div>
+
+  <app-terminate-account
+    *ngIf="showingTerminateVerification"
+    class="mt-3 d-block"
+    [account]="s.account"
+  ></app-terminate-account>
+</ng-container>
