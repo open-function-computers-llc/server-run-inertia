@@ -55,11 +55,24 @@
                     <span class="table-title">{{ selectedTable }}</span>
                     <span class="muted small">{{ rangeText }}</span>
                     <span v-if="!hasPK" class="pk-warning">no primary key — rows are view-only for this table</span>
+                    <button
+                        v-if="selectedCount > 0"
+                        class="btn-danger-solid btn-tight"
+                        :disabled="deleting"
+                        @click="startBulkDelete">Delete selected ({{ selectedCount }})</button>
                 </div>
                 <div class="table-scroll">
                     <table>
                         <thead>
                             <tr>
+                                <th class="check-col" @click.stop>
+                                    <input
+                                        type="checkbox"
+                                        :checked="allOnPageSelected"
+                                        :disabled="!hasPK || selectableOnPage === 0"
+                                        @change="toggleSelectAll"
+                                        title="Select all rows on this page" />
+                                </th>
                                 <th class="actions-col"></th>
                                 <th
                                     v-for="c in tableData.columns" :key="c"
@@ -79,6 +92,13 @@
                             <tr v-for="(row, ri) in tableData.rows" :key="ri"
                                 :class="{ expanded: expandedRow === ri }"
                                 @click="toggleRowExpand(ri)">
+                                <td class="check-col" @click.stop>
+                                    <input
+                                        type="checkbox"
+                                        :checked="isSelected(row)"
+                                        :disabled="!isSelectableRow(row)"
+                                        @change="toggleSelect(row)" />
+                                </td>
                                 <td class="actions-col" @click.stop>
                                     <button class="btn-mini" :disabled="!hasPK" :title="hasPK ? 'Edit row' : 'Editing requires a primary key'" @click="startEdit(row)">Edit</button>
                                     <button class="btn-mini btn-danger" :disabled="!hasPK" :title="hasPK ? 'Delete row' : 'Deleting requires a primary key'" @click="startDelete(row)">Del</button>
@@ -89,7 +109,7 @@
                                 </td>
                             </tr>
                             <tr v-if="tableData.rows.length === 0">
-                                <td :colspan="tableData.columns.length + 1" class="empty center">No rows.</td>
+                                <td :colspan="tableData.columns.length + 2" class="empty center">No rows.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -163,6 +183,26 @@
             <div class="form-actions">
                 <button class="btn-danger-solid" :disabled="deleting" @click="confirmDelete">{{ deleting ? 'Deleting…' : 'Delete row' }}</button>
                 <button class="btn-ghost" :disabled="deleting" @click="cancelDelete">Cancel</button>
+            </div>
+        </div>
+    </Modal>
+    <!-- bulk delete confirmation modal -->
+    <Modal v-if="bulkDeleteTargets">
+        <div class="row-form">
+            <div class="form-head">
+                <h3>Delete {{ bulkDeleteTargets.length }} row(s) from <span class="table-title">{{ selectedTable }}</span>?</h3>
+                <button class="btn-ghost" @click="cancelBulkDelete">✕ Close</button>
+            </div>
+            <p class="muted small">This permanently removes every row listed below. This cannot be undone.</p>
+            <ul class="pk-list pk-list-bulk">
+                <li v-for="(pkValues, i) in bulkDeleteTargets" :key="i">{{
+                    pkValues.map(([name, val]) => `${name}=${isNull(val) ? 'NULL' : val}`).join(', ')
+                }}</li>
+            </ul>
+            <div v-if="deleteError" class="error-msg">{{ deleteError }}</div>
+            <div class="form-actions">
+                <button class="btn-danger-solid" :disabled="deleting" @click="confirmBulkDelete">{{ deleting ? 'Deleting…' : `Delete ${bulkDeleteTargets.length} row(s)` }}</button>
+                <button class="btn-ghost" :disabled="deleting" @click="cancelBulkDelete">Cancel</button>
             </div>
         </div>
     </Modal>
@@ -274,6 +314,154 @@ function applyLimit() {
     loadTableData()
 }
 
+// ---------- row selection ----------
+// Selection is keyed by the row's primary-key values (serialized) so it
+// survives re-renders and stays precise across pages. Rows from other pages
+// stay selected (they carry their PK), but "select all" only ever touches the
+// rows currently displayed. Tables without a PK cannot be selected: there is
+// no way to address their rows for deletion.
+const selectedKeys = ref(new Set())
+
+function pkKeyOf(row) {
+    if (!tableData.value?.primaryKey?.length) return null
+    return JSON.stringify(tableData.value.primaryKey.map((pk) => {
+        const idx = tableData.value.columnInfo.findIndex((c) => c.name === pk)
+        return idx >= 0 ? row[idx] : null
+    }))
+}
+
+function isSelectableRow(row) {
+    if (!hasPK.value) return false
+    const key = pkKeyOf(row)
+    if (key === null) return false
+    return JSON.parse(key).every((v) => !isNull(v))   // NULL PK can't be targeted
+}
+
+function isSelected(row) {
+    const key = pkKeyOf(row)
+    return key !== null && selectedKeys.value.has(key)
+}
+
+const selectedCount = computed(() => selectedKeys.value.size)
+
+const selectableOnPage = computed(() =>
+    (tableData.value?.rows || []).filter(isSelectableRow).length)
+
+const allOnPageSelected = computed(() =>
+    selectableOnPage.value > 0 &&
+    (tableData.value?.rows || []).filter(isSelectableRow).every(isSelected))
+
+function toggleSelect(row) {
+    const key = pkKeyOf(row)
+    if (key === null) return
+    const next = new Set(selectedKeys.value)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    selectedKeys.value = next
+}
+
+// Deliberately page-scoped: only the rows currently displayed are selected,
+// never the whole table — a 10M-row "select all" would be a loaded gun.
+function toggleSelectAll() {
+    const next = new Set(selectedKeys.value)
+    const target = !allOnPageSelected.value
+    for (const row of tableData.value?.rows || []) {
+        if (!isSelectableRow(row)) continue
+        const key = pkKeyOf(row)
+        if (key === null) continue
+        if (target) next.add(key)
+        else next.delete(key)
+    }
+    selectedKeys.value = next
+}
+
+function clearSelection() {
+    selectedKeys.value = new Set()
+}
+
+// ---------- bulk delete ----------
+const bulkDeleteTargets = ref(null) // [[ [pkName, pkValue], ... ], ...] | null
+
+function startBulkDelete() {
+    if (!tableData.value || selectedCount.value === 0) return
+    deleteError.value = ''
+    const pks = tableData.value.primaryKey || []
+    const targets = []
+    let skipped = 0
+    for (const keyJson of selectedKeys.value) {
+        const raw = JSON.parse(keyJson)
+        if (!pks.length || raw.length !== pks.length || raw.some((v) => isNull(v))) {
+            skipped += 1
+            continue
+        }
+        targets.push(pks.map((pk, i) => [pk, raw[i]]))
+    }
+    if (targets.length === 0) {
+        // nothing is addressable — surface it where the user clicked rather
+        // than opening an empty confirmation sheet
+        error.value = 'None of the selected rows can be deleted safely (each row needs a complete, non-NULL primary key).'
+        return
+    }
+    if (skipped > 0) {
+        deleteError.value = `${skipped} selected row(s) lack a complete primary key and will be skipped.`
+    }
+    bulkDeleteTargets.value = targets
+}
+
+function cancelBulkDelete() {
+    bulkDeleteTargets.value = null
+    deleteError.value = ''
+}
+
+function pkKeyOfPkValues(pkValues) {
+    return JSON.stringify(pkValues.map(([, v]) => v))
+}
+
+async function confirmBulkDelete() {
+    if (deleting.value || !bulkDeleteTargets.value) return
+    deleting.value = true
+    deleteError.value = ''
+    const url = `${apiBase.value}/tables/${encodeURIComponent(selectedTable.value)}/rows`
+    const failed = []
+    let deleted = 0
+    try {
+        // One request per row: the DELETE endpoint addresses a single row by
+        // its full PK, and doing them one at a time means a FK-blocked or
+        // already-deleted row cannot roll back or mask the rest. Results are
+        // summarized in one toast.
+        for (const pkValues of bulkDeleteTargets.value) {
+            const body = new FormData()
+            for (const [name, val] of pkValues) body.append('pk_' + name, val)
+            try {
+                const res = await axios.delete(url, { data: body })
+                if (res.data.error) failed.push(pkValues.map(([n, v]) => `${n}=${v}`).join(', '))
+                else deleted += 1
+            } catch (err) {
+                failed.push(pkValues.map(([n, v]) => `${n}=${v}`).join(', '))
+            }
+        }
+        if (deleted > 0) {
+            showToast(`Deleted ${deleted} row(s) from ${selectedTable.value}.`)
+        }
+        if (failed.length > 0) {
+            deleteError.value = `${failed.length} row(s) could not be deleted: ${failed.join('; ')}`
+            // keep the modal open with only the failures selected for retry
+            const keep = new Set()
+            for (const pkValues of bulkDeleteTargets.value) {
+                const desc = pkValues.map(([n, v]) => `${n}=${v}`).join(', ')
+                if (failed.includes(desc)) keep.add(pkKeyOfPkValues(pkValues))
+            }
+            selectedKeys.value = keep
+        } else {
+            cancelBulkDelete()
+            clearSelection()
+        }
+        await loadTableData()
+    } finally {
+        deleting.value = false
+    }
+}
+
 function toggleRowExpand(ri) {
     expandedRow.value = expandedRow.value === ri ? null : ri
 }
@@ -295,6 +483,8 @@ function onDbChange() {
     sortColumn.value = ''
     sortDir.value = 'asc'
     cancelForm()
+    cancelBulkDelete()
+    clearSelection()
     loadTables()
 }
 
@@ -326,6 +516,8 @@ function selectTable(t) {
     sortColumn.value = ''
     sortDir.value = 'asc'
     cancelForm()
+    cancelBulkDelete()
+    clearSelection()
     loadTableData()
 }
 
@@ -775,6 +967,14 @@ async function confirmDelete() {
         if (res.data.error) { deleteError.value = res.data.error; return }
         const idDesc = deleteTarget.value.pkValues.map(([n, v]) => `${n}=${isNull(v) ? 'NULL' : v}`).join(', ')
         showToast(`Deleted row from ${selectedTable.value} (${idDesc}).`)
+        // drop it from any selection so a re-inserted row with the same PK
+        // does not appear pre-selected
+        const key = JSON.stringify(deleteTarget.value.pkValues.map(([, v]) => v))
+        if (selectedKeys.value.has(key)) {
+            const next = new Set(selectedKeys.value)
+            next.delete(key)
+            selectedKeys.value = next
+        }
         cancelDelete()
         await loadTableData()
     } catch (err) {
@@ -1062,7 +1262,8 @@ async function confirmDelete() {
             font-size: 11px;
         }
 
-        th.actions-col, td.actions-col {
+        th.actions-col, td.actions-col,
+        th.check-col, td.check-col {
             position: sticky;
             left: 0;
             background: $c-od-surface-hi;
@@ -1070,7 +1271,18 @@ async function confirmDelete() {
             width: 1%;
         }
 
-        td.actions-col { background: $c-od-surface; }
+        td.check-col { background: $c-od-surface; }
+
+        th.check-col + th.actions-col { left: 34px; }
+
+        td.check-col input[type='checkbox'],
+        th.check-col input[type='checkbox'] {
+            accent-color: var(--c-od-accent);
+            cursor: pointer;
+            margin: 0;
+
+            &:disabled { cursor: not-allowed; opacity: 0.4; }
+        }
 
         tbody tr:hover td.cell { background: $c-od-surface-hi; }
     }
@@ -1141,6 +1353,8 @@ async function confirmDelete() {
 
     &:hover { opacity: 0.9; }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    &.btn-tight { padding: 4px 12px; font-size: 12px; margin-left: auto; }
 }
 
 .pk-list {
