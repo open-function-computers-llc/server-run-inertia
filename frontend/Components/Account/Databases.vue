@@ -166,8 +166,8 @@
         </div>
     </Modal>
 
-    <!-- delete confirmation modal -->
-    <Modal v-if="deleteTarget">
+    <!-- delete confirmation modal (compact: it only names the target rows) -->
+    <Modal v-if="deleteTarget" size="compact">
         <div class="row-form">
             <div class="form-head">
                 <h3>Delete row from <span class="table-title">{{ selectedTable }}</span>?</h3>
@@ -186,8 +186,9 @@
             </div>
         </div>
     </Modal>
-    <!-- bulk delete confirmation modal -->
-    <Modal v-if="bulkDeleteTargets">
+    <!-- bulk delete confirmation modal (compact: a row-list prompt should
+         not take over the whole screen) -->
+    <Modal v-if="bulkDeleteTargets" size="compact">
         <div class="row-form">
             <div class="form-head">
                 <h3>Delete {{ bulkDeleteTargets.length }} row(s) from <span class="table-title">{{ selectedTable }}</span>?</h3>
