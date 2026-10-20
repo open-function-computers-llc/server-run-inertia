@@ -61,8 +61,17 @@
                         <thead>
                             <tr>
                                 <th class="actions-col"></th>
-                                <th v-for="c in tableData.columns" :key="c" :class="{ pk: isPkColumn(c) }">
-                                    {{ c }}<span v-if="isPkColumn(c)" class="pk-mark" title="primary key"> ·PK</span>
+                                <th
+                                    v-for="c in tableData.columns" :key="c"
+                                    class="sortable"
+                                    :class="{ sorted: sortBy === c }"
+                                    :title="'Sort by ' + c"
+                                    @click="toggleSort(c)">
+                                    {{ c }}<span v-if="isPkColumn(c)" class="pk-mark" title="primary key"> ·PK</span><button
+                                        v-if="sortBy === c"
+                                        class="sort-dir"
+                                        :title="sortDir === 'asc' ? 'Reverse sort' : 'Sort ascending'"
+                                        @click.stop="reverseSort">{{ sortDir === 'asc' ? '▲' : '▼' }}</button>
                                 </th>
                             </tr>
                         </thead>
@@ -226,6 +235,33 @@ const rangeText = computed(() => {
     return `rows ${first}–${last} of ${total}`
 })
 
+// ---------- column sorting ----------
+// Sorting is server-side (ORDER BY over the WHOLE table, not just this page);
+// the server validates the column against information_schema before use.
+const sortColumn = ref('')          // '' = default order (server uses PK ASC)
+const sortDir = ref('asc')          // 'asc' | 'desc'
+const sortBy = computed(() => sortColumn.value)
+
+function toggleSort(col) {
+    if (sortColumn.value === col) {
+        // clicking the already-sorted column reverses it (matches the
+        // reverse-sort button; both are the user's "flip direction" gesture)
+        reverseSort()
+        return
+    }
+    sortColumn.value = col
+    sortDir.value = 'asc'
+    page.value = 1
+    loadTableData()
+}
+
+function reverseSort() {
+    if (!sortColumn.value) return
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+    page.value = 1
+    loadTableData()
+}
+
 function gotoPage(p) {
     const target = Math.min(Math.max(1, p), pageCount.value)
     if (target === page.value) return
@@ -255,6 +291,9 @@ function onDbChange() {
     tables.value = []
     tableData.value = null
     error.value = ''
+    page.value = 1
+    sortColumn.value = ''
+    sortDir.value = 'asc'
     cancelForm()
     loadTables()
 }
@@ -283,6 +322,9 @@ function selectTable(t) {
     error.value = ''
     expandedRow.value = null
     page.value = 1
+    // Sort is per-table state: a sort column from another table would 400.
+    sortColumn.value = ''
+    sortDir.value = 'asc'
     cancelForm()
     loadTableData()
 }
@@ -297,9 +339,21 @@ async function loadTableData() {
             limit: rowLimit.value || 100,
             offset: (page.value - 1) * (rowLimit.value || 100),
         }
+        if (sortColumn.value) {
+            params.sort = sortColumn.value
+            params.dir = sortDir.value
+        }
         const res = await axios.get(`${apiBase.value}/tables/${encodeURIComponent(selectedTable.value)}`, { params })
         if (res.data.error) { error.value = res.data.error; return }
         tableData.value = res.data
+        // Default sort is the first PK column ASC — which is exactly the
+        // server's default order, so adopting it here costs no extra request
+        // and gives the header the sorted highlight + reverse button out of
+        // the box (previously a hard-coded highlight on the PK header).
+        if (!sortColumn.value && tableData.value.primaryKey?.length) {
+            sortColumn.value = tableData.value.primaryKey[0]
+            sortDir.value = 'asc'
+        }
         // A delete (here or elsewhere) can empty the current page; clamp back
         // into range instead of stranding the user on "page 7 of 6".
         if (tableData.value.rows.length === 0 && page.value > 1 && totalRows.value > 0 && page.value > pageCount.value) {
@@ -952,8 +1006,35 @@ async function confirmDelete() {
             text-align: left;
             z-index: 1;
 
-            &.pk { color: $c-od-accent; }
             .pk-mark { font-size: 10px; color: $c-od-accent; }
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+
+            &:hover { color: $c-od-fg; }
+
+            // the column the rows are currently sorted by keeps the accent
+            // highlight (the same treatment the PK header used to hard-code)
+            &.sorted {
+                color: $c-od-accent;
+                box-shadow: inset 0 -2px 0 var(--c-od-accent);
+            }
+
+            .sort-dir {
+                margin-left: 4px;
+                padding: 0 3px;
+                border: none;
+                background: transparent;
+                color: $c-od-accent;
+                font-size: 10px;
+                line-height: 1.4;
+                cursor: pointer;
+                border-radius: 4px;
+
+                &:hover { background: rgba(255, 255, 255, 0.08); }
+            }
         }
 
         td.cell {

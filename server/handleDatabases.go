@@ -193,10 +193,12 @@ func (s *server) handleDbTables() http.HandlerFunc {
 
 // handleDbTableData returns the columns, per-column metadata, primary key
 // columns, one LIMIT/OFFSET page of rows, and the exact row total for a
-// single table. The server builds the SELECT itself (it never concatenates
-// client input into the query), so this handler is structurally read-only and
-// immune to SQL injection.
-// GET /api/accounts/{account}/databases/{db}/tables/{table}?limit=N&offset=M
+// single table. The server builds the SELECT itself: identifiers come only
+// from its own information_schema queries (the `sort` column is validated
+// against them, `dir` against a two-value whitelist) and every value binds as
+// a parameter, so this handler is structurally read-only and immune to
+// SQL injection.
+// GET /api/accounts/{account}/databases/{db}/tables/{table}?limit=N&offset=M&sort=col&dir=asc|desc
 func (s *server) handleDbTableData() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		accountName := r.PathValue("account")
@@ -204,6 +206,8 @@ func (s *server) handleDbTableData() http.HandlerFunc {
 		table := r.PathValue("table")
 		limitStr := r.URL.Query().Get("limit")
 		offsetStr := r.URL.Query().Get("offset")
+		sortBy := r.URL.Query().Get("sort")
+		sortDir := strings.ToLower(r.URL.Query().Get("dir"))
 
 		if accountName == "" || dbName == "" || table == "" {
 			sendJSONError(w, http.StatusBadRequest, map[string]string{
@@ -275,19 +279,68 @@ func (s *server) handleDbTableData() http.HandlerFunc {
 			}
 		}
 
-		// Build the SELECT ourselves. `table` was validated to be a real
-		// table in this schema and is quoted with backticks; the column list
-		// comes from the server's own information_schema query, not the
-		// client. LIMIT and OFFSET are ints clamped/parsed above. Nothing
-		// user-controlled is spliced in raw.
-		//
-		// ORDER BY the PK is explicit: InnoDB returns PK order for a plain
-		// SELECT in practice, but relying on unspecified behavior makes
-		// OFFSET paging able to skip or repeat rows.
+		// Sort whitelist: the client may only sort by a real column of THIS
+		// table (checked against the information_schema metadata above, not
+		// trusted from the request) and only in asc/desc. An unknown sort
+		// column is an error rather than a silent ignore, so a stale UI can't
+		// quietly show unsorted data after a rename.
+		if sortBy != "" {
+			found := false
+			for _, n := range columnNames {
+				if n == sortBy {
+					found = true
+					break
+				}
+			}
+			if !found {
+				sendJSONError(w, http.StatusBadRequest, map[string]string{
+					"error": "`sort` must name a column of this table",
+				})
+				return
+			}
+			if sortDir == "" {
+				sortDir = "asc"
+			}
+			if sortDir != "asc" && sortDir != "desc" {
+				sendJSONError(w, http.StatusBadRequest, map[string]string{
+					"error": "`dir` must be asc or desc",
+				})
+				return
+			}
+		} else {
+			sortDir = "asc" // ignored; only PK tie-breakers are used
+		}
+
+		// ORDER BY is server-built from a whitelist: `sort` was validated
+		// against information_schema above and `dir` against asc/desc, so the
+		// only identifiers reaching the SQL text are backtick-quoted,
+		// server-sourced names.
 		colList := strings.Join(quoteIdentifiers(columnNames), ", ")
 		query := fmt.Sprintf("SELECT %s FROM `%s`", colList, table)
-		if len(primaryKey) > 0 {
-			query += " ORDER BY " + quoteIdentifier(primaryKey[0]) + " ASC"
+
+		orderBy := []string{}
+		if sortBy != "" {
+			orderBy = append(orderBy, quoteIdentifier(sortBy)+" "+strings.ToUpper(sortDir))
+			// A secondary key on the PK keeps rows with equal sort values
+			// (including NULLs, which MySQL groups non-deterministically) in
+			// a stable order, so paging never skips or duplicates a row.
+			for _, pk := range primaryKey {
+				if pk == sortBy {
+					continue
+				}
+				orderBy = append(orderBy, quoteIdentifier(pk)+" ASC")
+				break // one tie-breaker is enough
+			}
+		} else {
+			// Default order: the PK when the table has one (InnoDB returns PK
+			// order anyway; being explicit makes OFFSET paging coherent).
+			for _, pk := range primaryKey {
+				orderBy = append(orderBy, quoteIdentifier(pk)+" ASC")
+				break
+			}
+		}
+		if len(orderBy) > 0 {
+			query += " ORDER BY " + strings.Join(orderBy, ", ")
 		}
 		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 
