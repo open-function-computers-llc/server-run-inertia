@@ -42,6 +42,7 @@ import Modal from "@/Components/Modal.vue";
 import CloneAccount from "@/Components/Account/CloneAccount.vue";
 import LockUnlock from "@/Components/Account/LockUnlock.vue";
 import Analytics from "@/Components/Account/Analytics.vue";
+import Databases from "@/Components/Account/Databases.vue";
 import Domains from "@/Components/Account/Domains.vue";
 import Export from "@/Components/Account/Export.vue";
 import Logs from "@/Components/Account/Logs.vue";
@@ -69,6 +70,7 @@ const runClone = ref(false);
 const tabComponents = {
     domains: Domains,
     analytics: Analytics,
+    databases: Databases,
     logs: Logs,
     export: Export,
     settings: Settings,

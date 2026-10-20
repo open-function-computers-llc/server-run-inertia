@@ -1,10 +1,23 @@
 <template>
 <div class="modal">
-    <div class="modal-contents">
+    <div class="modal-contents" :class="'size-' + size">
         <slot />
     </div>
 </div>
 </template>
+
+<script setup>
+defineProps({
+    // 'full' (default) keeps the historical 90vw/90vh sheet used by the rest of
+    // the app; 'compact' shrinks to fit content — right for small confirmations
+    // where a full-screen sheet is overwhelming.
+    size: {
+        type: String,
+        default: 'full',
+        validator: (v) => ['full', 'compact'].includes(v)
+    }
+})
+</script>
 
 <style scoped lang="scss">
 @import "../scss/variables.scss";
@@ -27,8 +40,18 @@
         border-radius: 14px;
         padding: 1.5rem;
         overflow: auto;
-        width: 90vw;
-        height: 90vh;
+
+        &.size-full {
+            width: 90vw;
+            height: 90vh;
+        }
+
+        &.size-compact {
+            width: auto;
+            height: auto;
+            max-width: min(520px, 92vw);
+            max-height: min(80vh, 92vh);
+        }
     }
 }
 </style>

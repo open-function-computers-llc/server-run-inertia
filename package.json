@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "@inertiajs/vue3": "^1.0.14",
+    "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "chart.js": "^4.5.0",
     "vue": "^3.4.0",

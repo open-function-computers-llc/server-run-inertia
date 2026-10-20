@@ -2,6 +2,7 @@
 <nav class="subnav">
     <a href="#" :class="{ active: activeTab === 'domains' }" @click.prevent="emit('update-tab', 'domains')">Domains</a>
     <a href="#" :class="{ active: activeTab === 'analytics' }" @click.prevent="emit('update-tab', 'analytics')">Analytics</a>
+    <a href="#" :class="{ active: activeTab === 'databases' }" @click.prevent="emit('update-tab', 'databases')">Databases</a>
     <a href="#" :class="{ active: activeTab === 'logs' }" @click.prevent="emit('update-tab', 'logs')">Logs</a>
     <a href="#" :class="{ active: activeTab === 'export' }" @click.prevent="emit('update-tab', 'export')">Export</a>
     <a href="#" v-if="sshPubKey !== ''" :class="{ active: activeTab === 'pubkey' }" @click.prevent="emit('update-tab', 'pubkey')">SSH PubKey</a>

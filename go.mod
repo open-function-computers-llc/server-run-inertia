@@ -5,6 +5,7 @@ go 1.25
 require (
 	code.gitea.io/sdk/gitea v0.21.0
 	github.com/dchest/uniuri v1.2.0
+	github.com/go-sql-driver/mysql v1.10.1
 	github.com/gorilla/websocket v1.5.1
 	github.com/joho/godotenv v1.5.1
 	github.com/petaki/inertia-go v1.6.0
@@ -13,6 +14,7 @@ require (
 )
 
 require (
+	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/42wim/httpsig v1.2.2 // indirect
 	github.com/davidmz/go-pageant v1.0.2 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
