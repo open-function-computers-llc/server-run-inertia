@@ -19,10 +19,10 @@
     <div class="created-at">Created: {{ account.createdAt }}</div>
 
     <div>
-        <SubNav :sshPubKey="account.sshPubKey" :activeTab="activeTab" @update-tab="activeTab = $event" />
+        <SubNav :sshPubKey="account.sshPubKey" :vcsAvailable="vcsAvailable" :activeTab="activeTab" @update-tab="activeTab = $event" />
 
         <div class="tab-panel">
-            <component :is="tabComponents[activeTab]" :account="account" />
+            <component :is="tabComponents[activeTab]" :account="account" :vcsAvailable="vcsAvailable" :providers="vcsProviders" />
         </div>
     </div>
 
@@ -47,6 +47,7 @@ import Export from "@/Components/Account/Export.vue";
 import Logs from "@/Components/Account/Logs.vue";
 import PubKey from "@/Components/Account/PubKey.vue";
 import Settings from "@/Components/Account/Settings.vue";
+import Vcs from "@/Components/Account/Vcs.vue";
 import SubNav from "@/Components/Account/SubNav.vue";
 
 defineOptions({ layout: Layout });
@@ -59,6 +60,14 @@ const props = defineProps({
     stagingDomain: {
         type: String,
         default: "stagingsubdomain.com",
+    },
+    vcsAvailable: {
+        type: Boolean,
+        default: false,
+    },
+    vcsProviders: {
+        type: Array,
+        default: [],
     },
 });
 
@@ -73,6 +82,7 @@ const tabComponents = {
     export: Export,
     settings: Settings,
     pubkey: PubKey,
+    repos: Vcs,
 };
 </script>
 

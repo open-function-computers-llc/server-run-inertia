@@ -3,10 +3,7 @@ package app
 import (
 	"fmt"
 
-	"github.com/open-function-computers-llc/server-run-inertia/vcs"
-	"github.com/open-function-computers-llc/server-run-inertia/vcs/dummy"
-	"github.com/open-function-computers-llc/server-run-inertia/vcs/gitea"
-	"github.com/open-function-computers-llc/server-run-inertia/vcs/github"
+	"github.com/open-function-computers-llc/server-run-inertia/vcs/registry"
 	"github.com/urfave/cli/v2"
 )
 
@@ -21,6 +18,7 @@ func createRepo() *cli.Command {
 				Usage:    "Name of the new git repository",
 				Required: true,
 			},
+			providerFlag(),
 		},
 		Action: createRepoAction,
 	}
@@ -29,32 +27,19 @@ func createRepo() *cli.Command {
 func createRepoAction(cCtx *cli.Context) error {
 	repoName := cCtx.String("name")
 
-	provider, err := vcs.DetermineProvider()
+	name, err := registry.Resolve(cCtx.String("provider"))
 	if err != nil {
 		return err
 	}
 
-	var p vcs.Provider
-	if provider == "gitea" {
-		p, err = gitea.NewProvider()
-		if err != nil {
-			return err
-		}
-	} else if provider == "github" {
-		p, err = github.NewProvider()
-		if err != nil {
-			return err
-		}
-	} else if provider == "bitbucket" {
-		// p = bitbucket.NewProvider()
-	} else {
-		p, _ = dummy.NewProvider()
-	}
-
-	err = p.CreateRepository(repoName)
+	p, err := registry.Build(name)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Created repo: " + repoName)
+
+	if err := p.CreateRepository(repoName); err != nil {
+		return err
+	}
+	fmt.Printf("Created repo %q on %s\n", repoName, name)
 	return nil
 }

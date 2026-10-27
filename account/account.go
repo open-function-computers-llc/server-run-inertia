@@ -22,6 +22,7 @@ type Account struct {
 	AlwaysUnlockedDirectories []string   `json:"alwaysUnlockedDirectories"`
 	Databases                 []Database `json:"databases"`
 	PubKey                    string     `json:"sshPubKey"`
+	VCSProvider               string     `json:"vcsProvider,omitempty"`
 	CreatedAt                 time.Time  `json:"createdAt"`
 	UpdatedAt                 time.Time  `json:"updatedAt"`
 }
@@ -231,5 +232,16 @@ func (a *Account) AddDatabase(host, user, pass, name string) error {
 
 func (a *Account) SetUptimeURL(url string) error {
 	a.UptimeURL = strings.TrimSpace(url)
+	return a.writeSettingsFile()
+}
+
+// SetVCSProvider pins this client to a specific VCS provider. An empty
+// string clears the pin and falls back to the server default.
+func (a *Account) SetVCSProvider(provider string) error {
+	if !slices.Contains([]string{"", "gitea", "github"}, provider) {
+		return errx.Wrapf("invalid param provided", fmt.Errorf("%q is not a valid VCS provider", provider), ErrorInvalidParam)
+	}
+
+	a.VCSProvider = provider
 	return a.writeSettingsFile()
 }

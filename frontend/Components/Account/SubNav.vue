@@ -4,6 +4,7 @@
     <a href="#" :class="{ active: activeTab === 'analytics' }" @click.prevent="emit('update-tab', 'analytics')">Analytics</a>
     <a href="#" :class="{ active: activeTab === 'logs' }" @click.prevent="emit('update-tab', 'logs')">Logs</a>
     <a href="#" :class="{ active: activeTab === 'export' }" @click.prevent="emit('update-tab', 'export')">Export</a>
+    <a href="#" v-if="vcsAvailable" :class="{ active: activeTab === 'repos' }" @click.prevent="emit('update-tab', 'repos')">Repos</a>
     <a href="#" v-if="sshPubKey !== ''" :class="{ active: activeTab === 'pubkey' }" @click.prevent="emit('update-tab', 'pubkey')">SSH PubKey</a>
     <a href="#" :class="{ active: activeTab === 'settings' }" @click.prevent="emit('update-tab', 'settings')">Settings</a>
 </nav>
@@ -14,6 +15,10 @@ const props = defineProps({
     sshPubKey: {
         type: String,
         default: "",
+    },
+    vcsAvailable: {
+        type: Boolean,
+        default: false,
     },
     activeTab: {
         type: String,

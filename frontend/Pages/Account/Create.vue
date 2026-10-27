@@ -63,7 +63,7 @@
     </div>
 
     <ScriptRunner v-else
-        script="addAccount"
+        script="add-account"
         :envvars="{
             ACCOUNT_NAME: newAccountName,
             DOMAIN: domain,

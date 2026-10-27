@@ -1,10 +1,12 @@
 <template>
 <div class="account-settings">
+    <h3 class="section-title">Settings</h3>
+
     <!-- Uptime monitoring -->
     <section class="settings-section">
         <div class="section-header">
             <div>
-                <h4 class="section-title">Uptime Monitoring</h4>
+                <h4 class="setting-title">Uptime Monitoring</h4>
                 <p class="section-sub">Currently monitoring: <strong>{{ account.uptimeURL || 'not set' }}</strong></p>
             </div>
             <button class="btn-ghost" @click="showUptimeForm = !showUptimeForm">
@@ -34,7 +36,7 @@
     <section class="settings-section danger-zone">
         <div class="section-header">
             <div>
-                <h4 class="section-title danger">Terminate Account</h4>
+                <h4 class="setting-title danger">Terminate Account</h4>
                 <p class="section-sub">This action is permanent and cannot be undone.</p>
             </div>
             <button class="btn-danger-outline" @click="showTerminateForm = !showTerminateForm">
@@ -52,7 +54,7 @@
         </div>
 
         <Modal v-if="isTerminating">
-            <ScriptRunner script="terminateAccount" :envvars="{ ACCOUNT_TO_DELETE: account.name }" @done="onTerminate" />
+            <ScriptRunner script="terminate-account" :envvars="{ ACCOUNT_TO_DELETE: account.name }" @done="onTerminate" />
         </Modal>
     </section>
 </div>
@@ -101,6 +103,12 @@ function onTerminate() { isTerminating.value = false; router.visit('/dashboard')
     gap: 24px;
 }
 
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
 .settings-section {
     display: flex;
     flex-direction: column;
@@ -114,7 +122,7 @@ function onTerminate() { isTerminating.value = false; router.visit('/dashboard')
     gap: 16px;
 }
 
-.section-title {
+.setting-title {
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 4px;

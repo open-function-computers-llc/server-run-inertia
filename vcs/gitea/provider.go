@@ -14,7 +14,10 @@ type gitTeaProvider struct {
 }
 
 func NewProvider() (gitTeaProvider, error) {
-	p := gitTeaProvider{}
+	p := gitTeaProvider{
+		AUTH_KEY: os.Getenv("GITEA_TOKEN"),
+		URL:      os.Getenv("GITEA_URL"),
+	}
 
 	for _, env := range []string{"GITEA_URL", "GITEA_TOKEN"} {
 		if os.Getenv(env) == "" {

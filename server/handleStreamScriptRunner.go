@@ -55,15 +55,12 @@ func (s *server) handleStreamScriptRunner() http.HandlerFunc {
 			}
 		}
 
-		commChannel := make(chan string)
+		commChannel := make(chan scriptrunner.StreamMessage)
 
 		go scriptrunner.StreamScriptOutput(script, args, env, &commChannel)
 
 		for incomingMessage := range commChannel {
-			message := map[string]interface{}{
-				"message": incomingMessage,
-			}
-			c.WriteJSON(message)
+			c.WriteJSON(incomingMessage)
 		}
 
 		c.Close()

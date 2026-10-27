@@ -1,8 +1,13 @@
 <template>
 <div class="script-runner">
-    <h3 class="script-title">{{ script ?? "No script" }}</h3>
+    <h3 class="script-title">{{ script || "No script" }}</h3>
     <ul class="output">
-        <li v-for="message in messages">{{ message }}</li>
+        <li
+            v-for="(message, index) in messages"
+            :key="index"
+            :class="'line-' + (message.type ?? 'stdout')">
+            {{ message.message }}
+        </li>
     </ul>
     <Link v-if="isDone && completeHref" :href="completeHref" class="done-btn">Done</Link>
     <button v-else-if="isDone" class="done-btn" @click="emit('done')">Done</button>
@@ -38,17 +43,25 @@ const isDone = ref(false);
 const emit = defineEmits(['done']);
 
 const scriptSocketRunner = () => {
-    if (props.script.value === "") {
-        messages.value.push("Missing required prop 'script'");
+    if (!props.script) {
+        messages.value.push({ message: "Missing required prop 'script'", type: "error" });
         return;
     }
 
+    // URLSearchParams encodes the JSON properly, so values like generated
+    // passwords containing & # % + don't shred the query string
+    const params = new URLSearchParams({
+        script: props.script,
+        env: JSON.stringify(props.envvars),
+        args: JSON.stringify(props.args),
+    });
+
     const proto = window.parent.location.protocol === "http:" ? "ws" : "wss";
-    const socket = new WebSocket(proto + "://" + window.location.host + "/stream/script-runner?script=" + props.script + "&env=" + JSON.stringify(props.envvars) + "&args=" + JSON.stringify(props.args));
+    const socket = new WebSocket(proto + "://" + window.location.host + "/stream/script-runner?" + params.toString());
 
     socket.addEventListener('message', (e) => {
         const data = JSON.parse(e.data);
-        messages.value.push(data.message);
+        messages.value.push({ message: data.message, type: data.type ?? "stdout" });
 
         setTimeout(() => {
             const items = document.querySelectorAll("li");
@@ -96,6 +109,29 @@ scriptSocketRunner();
     li {
         padding: 2px 0;
         line-height: 1.5;
+    }
+
+    .line-meta {
+        color: $c-od-muted;
+        font-size: 12px;
+    }
+
+    .line-section {
+        font-weight: 700;
+        color: $c-od-fg;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid $c-od-border;
+
+        &:first-child {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+    }
+
+    .line-error {
+        color: $c-od-danger;
     }
 }
 

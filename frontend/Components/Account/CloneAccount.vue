@@ -26,7 +26,7 @@
 </div>
 
 <ScriptRunner v-else
-    script="cloneAccount"
+    script="clone-account"
     :envvars="{
         SOURCE_ACCOUNT: account.name,
         DESTINATION_ACCOUNT: newAccountName,

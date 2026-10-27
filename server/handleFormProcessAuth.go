@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/open-function-computers-llc/server-run-inertia/session"
@@ -46,13 +48,32 @@ func (s *server) handleFormProcessAuth() http.HandlerFunc {
 		sessionKey := session.Create()
 
 		// set a cookie on the browser!
-		c := http.Cookie{
-			Name:    "server-run-auth",
-			Value:   sessionKey,
-			Expires: time.Now().Add(time.Minute * 30),
-		}
-		http.SetCookie(w, &c)
+		http.SetCookie(w, authCookie(sessionKey, 30*time.Minute))
 
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 	}
+}
+
+// authCookie builds the server-run-auth cookie. When value is empty and
+// maxAge is negative the browser is told to drop the cookie (logout).
+func authCookie(value string, maxAge time.Duration) *http.Cookie {
+	secure := strings.HasPrefix(os.Getenv("APP_URL"), "https://")
+
+	c := &http.Cookie{
+		Name:     "server-run-auth",
+		Value:    value,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   secure,
+	}
+
+	if maxAge < 0 {
+		c.MaxAge = -1
+	} else {
+		c.MaxAge = int(maxAge.Seconds())
+		c.Expires = time.Now().Add(maxAge)
+	}
+
+	return c
 }

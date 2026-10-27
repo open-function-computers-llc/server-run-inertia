@@ -4,36 +4,89 @@ import (
 	"bufio"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/open-function-computers-llc/server-run-inertia/account"
 )
 
+// StreamMessage is one line of script output on its way to the browser.
+// Type tells the frontend how to render the line, so scripts don't have to
+// fake separation with echoed hyphens or blank lines.
+type StreamMessage struct {
+	Message string `json:"message"`
+	Type    string `json:"type"`
+}
+
+const (
+	MsgStdout  = "stdout"
+	MsgMeta    = "meta"
+	MsgSection = "section"
+	MsgError   = "error"
+)
+
+// Scripts can prefix output lines with these to have them rendered as a
+// section header or an error, instead of stuffing hyphens into the console.
+const (
+	sectionLinePrefix = "##section## "
+	errorLinePrefix   = "##error## "
+)
+
+func message(text, msgType string) StreamMessage {
+	return StreamMessage{Message: text, Type: msgType}
+}
+
+var redactedEnvKeyParts = []string{"PASSWORD", "SECRET", "TOKEN"}
+const redactedValue = "********"
+
+// redactEnvValue hides values for sensitive-looking env keys, so generated
+// passwords aren't streamed to every browser watching the script console.
+func redactEnvValue(key, value string) string {
+	upper := strings.ToUpper(key)
+	for _, part := range redactedEnvKeyParts {
+		if strings.Contains(upper, part) {
+			return redactedValue
+		}
+	}
+	return value
+}
+
 // StreamScriptOutput runs a script, sending each line of output down the
 // channel, and returns the script's error (if any) once it has exited.
-func StreamScriptOutput(scriptName string, args, env map[string]string, communicationChannel *chan string) error {
+func StreamScriptOutput(scriptName string, args, env map[string]string, communicationChannel *chan StreamMessage) error {
 	defer close(*communicationChannel)
 
 	scriptsRoot := os.Getenv("SCRIPTS_ROOT")
 
-	*communicationChannel <- "running " + scriptName
-	*communicationChannel <- "args:"
-	for key, val := range args {
-		*communicationChannel <- key + "=" + val
-	}
-	*communicationChannel <- "-"
-	*communicationChannel <- "env:"
-	for key, val := range env {
-		*communicationChannel <- key + "=" + val
-	}
-	*communicationChannel <- "-"
-	*communicationChannel <- "-"
-
 	t, err := scriptType(scriptName)
-
 	if err != nil {
-		*communicationChannel <- err.Error()
+		*communicationChannel <- message(err.Error(), MsgError)
 		return err
+	}
+
+	// validate what the browser sent us before touching the filesystem
+	if t == ARGSCRIPT {
+		if _, err := argumentScripts[scriptName].orderedArgs(args); err != nil {
+			*communicationChannel <- message(err.Error(), MsgError)
+			return err
+		}
+	}
+	if t == ENVSCRIPT {
+		if err := validateEnv(scriptName, env); err != nil {
+			*communicationChannel <- message(err.Error(), MsgError)
+			return err
+		}
+	}
+
+	*communicationChannel <- message("running "+scriptName, MsgMeta)
+	*communicationChannel <- message("args:", MsgMeta)
+	for key, val := range args {
+		*communicationChannel <- message(key+"="+val, MsgMeta)
+	}
+	*communicationChannel <- message("env:", MsgMeta)
+	for key, val := range env {
+		*communicationChannel <- message(key+"="+redactEnvValue(key, val), MsgMeta)
 	}
 
 	// time to run the script!
@@ -41,11 +94,7 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 	// set up the command runner
 	var cmd *exec.Cmd
 	if t == ARGSCRIPT {
-		argValues, err := argumentScripts[scriptName].orderedArgs(args)
-		if err != nil {
-			*communicationChannel <- err.Error()
-			return err
-		}
+		argValues, _ := argumentScripts[scriptName].orderedArgs(args)
 
 		// Guard the lock script - don't run if locked-down is disabled for this account
 		if scriptName == "lock" {
@@ -53,21 +102,21 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 			if accountName != "" {
 				a, err := account.Find(accountName)
 				if err == nil && a.IsLockedDownDisabled {
-					*communicationChannel <- "Lock-down is disabled for this account (isLockedDownDisabled is set). The lock script will not run."
+					*communicationChannel <- message("Lock-down is disabled for this account (isLockedDownDisabled is set). The lock script will not run.", MsgMeta)
 					return nil
 				}
 			}
 		}
 
-		cmd = exec.Command(scriptsRoot+argumentScripts[scriptName].filename, argValues...)
+		cmd = exec.Command(filepath.Join(scriptsRoot, argumentScripts[scriptName].filename), argValues...)
 	}
 
 	if t == PLAINSCRIPT {
-		cmd = exec.Command(scriptsRoot + plainScripts[scriptName])
+		cmd = exec.Command(filepath.Join(scriptsRoot, plainScripts[scriptName]))
 	}
 
 	if t == ENVSCRIPT {
-		cmd = exec.Command(scriptsRoot + envScripts[scriptName].filename)
+		cmd = exec.Command(filepath.Join(scriptsRoot, envScripts[scriptName].filename))
 
 		for key, val := range env {
 			cmd.Env = append(cmd.Env, key+"="+val)
@@ -86,15 +135,14 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 
 	go func() {
 		for scanner.Scan() {
-			line := scanner.Text()
-			*communicationChannel <- line
+			*communicationChannel <- classifyLine(scanner.Text())
 		}
 		wg.Done()
 	}()
 
 	err = cmd.Start()
 	if err != nil {
-		*communicationChannel <- "Error running the command: " + err.Error()
+		*communicationChannel <- message("Error running the command: "+err.Error(), MsgError)
 		return err
 	}
 
@@ -103,9 +151,21 @@ func StreamScriptOutput(scriptName string, args, env map[string]string, communic
 	// reap the process and report how it exited
 	err = cmd.Wait()
 	if err != nil {
-		*communicationChannel <- "Script exited with an error: " + err.Error()
+		*communicationChannel <- message("Script exited with an error: "+err.Error(), MsgError)
 	}
 	return err
+}
+
+// classifyLine turns a raw script output line into a typed message. Scripts
+// opt into structure by prefixing lines with ##section## or ##error##.
+func classifyLine(line string) StreamMessage {
+	if text, ok := strings.CutPrefix(line, sectionLinePrefix); ok {
+		return message(text, MsgSection)
+	}
+	if text, ok := strings.CutPrefix(line, errorLinePrefix); ok {
+		return message(text, MsgError)
+	}
+	return message(line, MsgStdout)
 }
 
 func ReturnScriptOutput(scriptName string, args, env map[string]string) ([]byte, error) {
@@ -115,22 +175,31 @@ func ReturnScriptOutput(scriptName string, args, env map[string]string) ([]byte,
 	}
 	scriptsRoot := os.Getenv("SCRIPTS_ROOT")
 
+	// validate what we were given before touching the filesystem
+	if t == ARGSCRIPT {
+		if _, err := argumentScripts[scriptName].orderedArgs(args); err != nil {
+			return nil, err
+		}
+	}
+	if t == ENVSCRIPT {
+		if err := validateEnv(scriptName, env); err != nil {
+			return nil, err
+		}
+	}
+
 	// set up the command runner
 	var cmd *exec.Cmd
 	if t == ARGSCRIPT {
-		argValues, err := argumentScripts[scriptName].orderedArgs(args)
-		if err != nil {
-			return nil, err
-		}
-		cmd = exec.Command(scriptsRoot+argumentScripts[scriptName].filename, argValues...)
+		argValues, _ := argumentScripts[scriptName].orderedArgs(args)
+		cmd = exec.Command(filepath.Join(scriptsRoot, argumentScripts[scriptName].filename), argValues...)
 	}
 
 	if t == PLAINSCRIPT {
-		cmd = exec.Command(scriptsRoot + plainScripts[scriptName])
+		cmd = exec.Command(filepath.Join(scriptsRoot, plainScripts[scriptName]))
 	}
 
 	if t == ENVSCRIPT {
-		cmd = exec.Command(scriptsRoot + envScripts[scriptName].filename)
+		cmd = exec.Command(filepath.Join(scriptsRoot, envScripts[scriptName].filename))
 
 		for key, val := range env {
 			cmd.Env = append(cmd.Env, key+"="+val)
