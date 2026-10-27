@@ -9,21 +9,21 @@ var envScripts = map[string]envScript{
 		filename:     "ofco-restore-site-from-backup.sh",
 		requiredEnvs: []string{"BACKUP_TARBALL", "DESTINATION_ACCOUNT"},
 	},
-	"addAccount": {
+	"add-account": {
 		filename:     "create-new-account.sh",
 		requiredEnvs: []string{"ACCOUNT_NAME"},
-		optionalEnvs: []string{"DOMAIN", "ADMIN_PASSWORD", "SITE_TITLE", "ADMIN_USERNAME", "ADMIN_EMAIL"},
+		optionalEnvs: []string{"DOMAIN", "INSTALL_WP", "INSTALL_RAD", "ADMIN_PASSWORD", "SITE_TITLE", "ADMIN_USERNAME", "ADMIN_EMAIL"},
 	},
-	"cloneAccount": {
+	"clone-account": {
 		filename:     "clone-wordpress-account.sh",
 		requiredEnvs: []string{"SOURCE_ACCOUNT", "DESTINATION_ACCOUNT"},
 		optionalEnvs: []string{"DESTINATION_DOMAIN"},
 	},
-	"terminateAccount": {
+	"terminate-account": {
 		filename:     "ofco-delete-account.sh",
 		requiredEnvs: []string{"ACCOUNT_TO_DELETE"},
 	},
-	"addDomainToAccount": {
+	"add-domain-to-account": {
 		filename:     "add-domain-to-account.sh",
 		requiredEnvs: []string{"ACCOUNT", "DOMAIN"},
 	},
@@ -33,6 +33,11 @@ var envScripts = map[string]envScript{
 	},
 	"ban-ip": {
 		filename:     "ban-ip.sh",
+		requiredEnvs: []string{"IPADDRESS"},
+	},
+	// read-only lookup of why an IP is banned, without unbanning it
+	"ban-lookup": {
+		filename:     "ban-lookup.sh",
 		requiredEnvs: []string{"IPADDRESS"},
 	},
 	"update-wordpress-domain": {

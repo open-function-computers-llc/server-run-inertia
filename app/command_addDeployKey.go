@@ -3,10 +3,7 @@ package app
 import (
 	"fmt"
 
-	"github.com/open-function-computers-llc/server-run-inertia/vcs"
-	"github.com/open-function-computers-llc/server-run-inertia/vcs/dummy"
-	"github.com/open-function-computers-llc/server-run-inertia/vcs/gitea"
-	"github.com/open-function-computers-llc/server-run-inertia/vcs/github"
+	"github.com/open-function-computers-llc/server-run-inertia/vcs/registry"
 	"github.com/urfave/cli/v2"
 )
 
@@ -35,6 +32,7 @@ func addDeployKey() *cli.Command {
 				Name:  "read-only",
 				Usage: "True if this key can only READ from the repository",
 			},
+			providerFlag(),
 		},
 		Action: addDeployKeyAction,
 	}
@@ -46,28 +44,19 @@ func addDeployKeyAction(cCtx *cli.Context) error {
 	key := cCtx.String("key")
 	readOnly := cCtx.Bool("read-only")
 
-	provider, err := vcs.DetermineProvider()
+	providerName, err := registry.Resolve(cCtx.String("provider"))
 	if err != nil {
 		return err
 	}
 
-	var p vcs.Provider
-	switch provider {
-	case "gitea":
-		p, err = gitea.NewProvider()
-	case "github":
-		p, err = github.NewProvider()
-	default:
-		p, _ = dummy.NewProvider()
-	}
+	p, err := registry.Build(providerName)
 	if err != nil {
 		return err
 	}
 
-	err = p.AddDeployKey(repo, name, key, readOnly)
-	if err != nil {
+	if err := p.AddDeployKey(repo, name, key, readOnly); err != nil {
 		return err
 	}
-	fmt.Println("Added deploy key '" + name + "' to repo '" + repo + "'")
+	fmt.Printf("Added deploy key '%s' to repo '%s' on %s\n", name, repo, providerName)
 	return nil
 }

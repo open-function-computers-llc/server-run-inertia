@@ -17,6 +17,10 @@ func (s *server) handleLogout() http.HandlerFunc {
 
 		session.Invalidate(sessionCookie.Value)
 
+		// tell the browser to drop the cookie too, otherwise it sits there
+		// until its natural expiry
+		http.SetCookie(w, authCookie("", -1))
+
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	}
 }

@@ -37,6 +37,8 @@ func (s *server) handleAccountDetails(tab string) http.HandlerFunc {
 		s.render(w, r, tabMapper[tab], map[string]any{
 			"account":       a,
 			"stagingDomain": stagingDomain(),
+			"vcsAvailable":  s.vcsAvailable,
+			"vcsProviders":  s.vcsProviders,
 		})
 	}
 }

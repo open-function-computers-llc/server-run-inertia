@@ -16,7 +16,7 @@ func (s *server) handleVcs() http.HandlerFunc {
 				vcsError = "Couldn't list repositories: " + err.Error()
 			}
 		} else if vcsError == "" {
-			vcsError = "Version control isn't configured on this server. Set VCS_PROVIDER to GITEA or GITHUB."
+			vcsError = "Version control isn't configured on this server. Set GITEA_URL and GITEA_TOKEN (default provider) or GITHUB_TOKEN, and optionally VCS_PROVIDER to change the default."
 		}
 
 		s.render(w, r, "VCS", map[string]any{

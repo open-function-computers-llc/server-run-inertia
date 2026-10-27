@@ -7,7 +7,7 @@
     <div class="grid">
         <!-- Accounts -->
         <div class="card">
-            <div class="card-header">
+            <div class="section-header">
                 <h3>Accounts <span class="count">({{ accounts.length }})</span></h3>
                 <div class="card-actions">
                     <Link href="/create-account" class="btn-primary">Add Account</Link>
@@ -31,7 +31,7 @@
         <div class="right-col">
             <!-- Server Actions -->
             <div class="card">
-                <div class="card-header">
+                <div class="section-header">
                     <h3>Server Actions</h3>
                 </div>
                 <BanIP />
@@ -39,7 +39,7 @@
 
             <!-- Disk Usage -->
             <div class="card">
-                <div class="card-header">
+                <div class="section-header">
                     <h3>Disk Usage</h3>
                 </div>
                 <ul class="disk-list">
@@ -119,11 +119,18 @@ const props = defineProps({
     padding: 24px;
 }
 
-.card-header {
+.section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+
+    // full-bleed band: counteract the card's 24px padding so the header
+    // gets its own tinted strip instead of floating in the card body
+    margin: -24px -24px 20px;
+    padding: 14px 24px;
+    background: $c-od-surface-hi;
+    border-bottom: 1px solid $c-od-border;
+    border-radius: 13px 13px 0 0;
 
     h3 {
         font-size: 15px;
@@ -172,7 +179,7 @@ const props = defineProps({
     transition: background 0.15s, color 0.15s;
 
     &:hover {
-        background: $c-od-surface-hi;
+    background: $c-od-surface-header;
         color: $c-od-fg;
     }
 }

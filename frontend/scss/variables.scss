@@ -1,13 +1,13 @@
 // https://palettes.shecodes.io/palettes/195
-$c-backgroundDark: #0e2431;
+$c-backgroundDark:  #0e2431;
 $c-backgroundLight: #e8d5b7;
-$c-white: #fff;
-$c-first: #fc3a52;
-$c-second: #f9b248;
-$c-black: #000;
-$c-darkGrey: #252525;
-$c-grey: #666;
-$c-red: #f00;
+$c-white:           #fff;
+$c-first:           #fc3a52;
+$c-second:          #f9b248;
+$c-black:           #000;
+$c-darkGrey:        #252525;
+$c-grey:            #666;
+$c-red:             #f00;
 
 $transition-time: 1s;
 
@@ -15,15 +15,16 @@ $transition-time: 1s;
 $grid-gutter-width: 30px;
 
 // New Open Design colors — reference CSS custom properties so themes can switch at runtime
-$c-od-bg:         var(--c-od-bg);
-$c-od-surface:    var(--c-od-surface);
-$c-od-surface-hi: var(--c-od-surface-hi);
-$c-od-fg:         var(--c-od-fg);
-$c-od-muted:      var(--c-od-muted);
-$c-od-border:     var(--c-od-border);
-$c-od-accent:     var(--c-od-accent);
-$c-od-accent-hi:  var(--c-od-accent-hi);
-$c-od-accent-sub: var(--c-od-accent-sub);
-$c-od-danger:     var(--c-od-danger);
-$c-od-success:    var(--c-od-success);
-$c-od-warn:       var(--c-od-warn);
+$c-od-bg:               var(--c-od-bg);
+$c-od-surface:          var(--c-od-surface);
+$c-od-surface-hi:       var(--c-od-surface-hi);
+$c-od-surface-header:   var(--c-od-surface-header);
+$c-od-fg:               var(--c-od-fg);
+$c-od-muted:            var(--c-od-muted);
+$c-od-border:           var(--c-od-border);
+$c-od-accent:           var(--c-od-accent);
+$c-od-accent-hi:        var(--c-od-accent-hi);
+$c-od-accent-sub:       var(--c-od-accent-sub);
+$c-od-danger:           var(--c-od-danger);
+$c-od-success:          var(--c-od-success);
+$c-od-warn:             var(--c-od-warn);

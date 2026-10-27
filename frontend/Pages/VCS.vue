@@ -2,6 +2,10 @@
 <div class="vcs">
     <div class="page-header">
         <h1>Repos</h1>
+        <p class="subtitle">
+            Repos are managed per account — pick an account's provider on its Repos tab.
+            This page uses the server-wide default provider.
+        </p>
     </div>
 
     <div class="grid">
@@ -113,6 +117,12 @@ const addKey = () => {
         font-size: 24px;
         font-weight: 700;
         letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+        font-size: 13px;
+        color: $c-od-muted;
+        margin-top: 6px;
     }
 }
 

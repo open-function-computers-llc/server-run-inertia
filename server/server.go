@@ -11,8 +11,7 @@ import (
 	"github.com/open-function-computers-llc/server-run-inertia/session"
 	"github.com/open-function-computers-llc/server-run-inertia/vcs"
 	"github.com/open-function-computers-llc/server-run-inertia/vcs/dummy"
-	"github.com/open-function-computers-llc/server-run-inertia/vcs/gitea"
-	"github.com/open-function-computers-llc/server-run-inertia/vcs/github"
+	"github.com/open-function-computers-llc/server-run-inertia/vcs/registry"
 	"github.com/petaki/inertia-go"
 	"github.com/sirupsen/logrus"
 )
@@ -30,6 +29,7 @@ type server struct {
 	upgrader        websocket.Upgrader
 	defaultLogo     []byte
 	vcsProvider     vcs.Provider
+	vcsProviders    []string
 	vcsErrorMessage string
 	vcsAvailable    bool
 	cms             string
@@ -78,26 +78,20 @@ func New(port int, url string, inertiaFS fs.FS, logo []byte) (server, error) {
 
 	s.vcsProvider, _ = dummy.NewProvider()
 
-	// check if VCS is enabled on this server run instance. A misconfigured
+	// check which VCS providers are configured on this instance. Providers are
+	// resolved per client (account), with gitea as the default. A misconfigured
 	// provider only disables VCS features, it doesn't stop the server.
-	provider, _ := vcs.DetermineProvider()
-	switch provider {
-	case "gitea":
-		if p, err := gitea.NewProvider(); err != nil {
-			s.vcsErrorMessage = err.Error()
-		} else {
-			s.vcsProvider = p
-			s.vcsAvailable = true
-		}
-	case "github":
-		if p, err := github.NewProvider(); err != nil {
-			s.vcsErrorMessage = err.Error()
-		} else {
-			s.vcsProvider = p
-			s.vcsAvailable = true
-		}
-	case "bitbucket":
-		s.vcsErrorMessage = "Bitbucket isn't supported yet"
+	s.vcsProviders = registry.Configured()
+	s.vcsAvailable = len(s.vcsProviders) > 0
+
+	if !s.vcsAvailable {
+		s.vcsErrorMessage = "Version control isn't configured on this server. Set GITEA_URL and GITEA_TOKEN (default provider) or GITHUB_TOKEN, and optionally VCS_PROVIDER to change the default."
+	} else if name, err := registry.Resolve(""); err != nil {
+		s.vcsErrorMessage = err.Error()
+	} else if p, err := registry.Build(name); err != nil {
+		s.vcsErrorMessage = err.Error()
+	} else {
+		s.vcsProvider = p
 	}
 
 	s.bindRoutes()

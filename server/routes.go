@@ -48,6 +48,10 @@ func (s *server) bindRoutes() {
 		"DELETE /accounts/{account}/domains/{domain}":    s.handleDeleteDomain(),
 		"PATCH /accounts/{account}/uptime-url":           s.handleFormSetUptimeURL(),
 		"PATCH /accounts/{account}/locked-down-disabled": s.handleFormSetLockedDownDisabled(),
+		"PATCH /accounts/{account}/vcs-provider":         s.handleAccountVcsSetProvider(),
+		"GET /accounts/{account}/vcs/repos":              s.handleAccountVcsRepos(),
+		"POST /accounts/{account}/vcs/repos":             s.handleAccountVcsCreateRepo(),
+		"POST /accounts/{account}/vcs/repos/deploy-keys": s.handleAccountVcsAddDeployKey(),
 
 		// raw JSON routes
 		"GET /api/accounts/{account}/analytics": s.handleAccountAnalytics(),
